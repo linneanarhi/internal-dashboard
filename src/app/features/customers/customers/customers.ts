@@ -52,6 +52,25 @@ export class CustomersComponent {
     return stage === 'ACTIVE' ? 'Klar' : 'Åtgärd';
   }
 
+  nextActionLabel(stage: Customer['stage']): string {
+    switch (stage) {
+      case 'QUOTE_SENT':
+        return 'Invänta godkännande av offert';
+      case 'QUOTE_APPROVED':
+        return 'Aktivera avtal';
+      case 'AGREEMENT_DRAFT':
+        return 'Slutför och aktivera avtal';
+      case 'ACTIVE':
+        return '—';
+      default:
+        return '—';
+    }
+  }
+
+  goToActivateAgreement(customerId: string): void {
+    this.router.navigate(['/agreements/activate', customerId]);
+  }
+
   toggleSort(col: SortColumn): void {
     if (this.sortBy === col) {
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';

@@ -8,7 +8,6 @@
 
     <div class="flex flex-wrap gap-2">
       <a routerLink="/quote/new" class="btn-accent">Skapa offert</a>
-      <a routerLink="/agreements/activate" class="btn-secondary">Aktivera avtal</a>
       <a routerLink="/technical-setup" class="btn-secondary">Teknisk uppsättning</a>
     </div>
   </div>
@@ -74,6 +73,21 @@
                   {{ labelForProduct(p) }}
                 </span>
               </div>
+
+              <!-- Mobil: visa status + nästa åtgärd under -->
+              <div class="mt-2 flex flex-col gap-1">
+                <span
+                  class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
+                  [ngClass]="statusLabel(c.stage) === 'Klar'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-800'"
+                >
+                  {{ statusLabel(c.stage) }}
+                </span>
+                <span class="text-xs text-ink3">
+                  {{ nextActionLabel(c.stage) }}
+                </span>
+              </div>
             </td>
 
             <td class="td text-right">
@@ -96,23 +110,23 @@
             <th class="th">Kund</th>
             <th class="th">Company ID</th>
 
-            <th class="th">
+            <!-- Produkter: klickbar rubrik + dropdown -->
+            <th class="th relative">
               <button
                 type="button"
-                class="text-ink hover:underline cursor-pointer"
+                class="text-ink hover:underline cursor-pointer inline-flex items-center gap-2"
                 (click)="productsOpen = !productsOpen; $event.stopPropagation()"
               >
                 Produkter
                 <span class="text-xs text-ink3">
                   {{ productFilter !== 'all' ? '(' + labelForProduct(productFilter) + ')' : '' }}
                 </span>
-
-                <i class="bi bi-caret-down-fill"></i>
+                <i class="bi bi-caret-down-fill text-xs"></i>
               </button>
 
               <div
                 *ngIf="productsOpen"
-                class="absolute z-10 mt-2 w-44 rounded-md border border-line bg-white shadow-lg"
+                class="absolute left-0 z-10 mt-2 w-48 rounded-md border border-line bg-white shadow-lg"
                 (click)="$event.stopPropagation()"
               >
                 <button
@@ -145,30 +159,24 @@
                 >
                   Ärendeanteckningar
                 </button>
-                <button
-                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-                  (click)="setProductFilter('other')"
-                >
-                  Övriga produkter
-                </button>
               </div>
             </th>
 
             <th class="th">Användare</th>
+
+            <!-- Startdatum sort -->
             <th class="th">
               <button
                 type="button"
-                class="text-ink hover:underline focus:outline-none cursor-pointer"
+                class="text-ink hover:underline focus:outline-none cursor-pointer inline-flex items-center gap-2"
                 (click)="toggleSort('createdAt')"
               >
                 Startdatum
-
                 <span class="text-ink">
                   <i
                     *ngIf="sortBy === 'createdAt' && sortDir === 'asc'"
                     class="bi bi-caret-up-fill"
                   ></i>
-
                   <i
                     *ngIf="sortBy === 'createdAt' && sortDir === 'desc'"
                     class="bi bi-caret-down-fill"
@@ -178,8 +186,8 @@
             </th>
 
             <th class="th">Status</th>
-
-            <th class="th">Åtgärd</th>
+            <th class="th">Nästa åtgärd</th>
+            <th class="th text-right">Åtgärd</th>
           </tr>
         </thead>
 
@@ -208,20 +216,38 @@
 
             <td class="td text-ink3">{{ formatDateISO(c.createdAt) }}</td>
 
+            <!-- Status badge -->
             <td class="td">
               <span
                 class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                [ngClass]="
-                  statusLabel(c.stage) === 'Klar'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-800'
-                "
+                [ngClass]="statusLabel(c.stage) === 'Klar'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-800'"
               >
                 {{ statusLabel(c.stage) }}
               </span>
             </td>
 
+            <!-- Next action -->
             <td class="td">
+              <span class="text-xs text-ink3">
+                <button
+                  *ngIf="c.stage === 'QUOTE_APPROVED' || c.stage === 'AGREEMENT_DRAFT'"
+                  type="button"
+                  class="hover:underline text-left"
+                  (click)="$event.stopPropagation(); goToActivateAgreement(c.id)"
+                >
+                  {{ nextActionLabel(c.stage) }}
+                </button>
+
+                <span *ngIf="!(c.stage === 'QUOTE_APPROVED' || c.stage === 'AGREEMENT_DRAFT')">
+                  {{ nextActionLabel(c.stage) }}
+                </span>
+              </span>
+            </td>
+
+            <!-- Row action -->
+            <td class="td text-right">
               <button
                 class="btn-accent bi bi-eye gap-2"
                 (click)="$event.stopPropagation(); openCustomer(c.id)"
@@ -236,9 +262,7 @@
   </section>
 
   <!-- Footnote -->
-  <div
-    class="flex flex-col gap-2 border-t border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-  >
+  <div class="flex flex-col gap-2 border-t border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="text-xs text-ink3">
       Totalt antal kunder:
       <span class="font-semibold text-ink">{{ totalCustomers }}</span>
@@ -247,8 +271,8 @@
     </div>
 
     <div class="text-xs text-ink3">
-      Visar <span class="font-semibold text-ink">{{ filteredCustomers.length }}</span> av
-      <span class="font-semibold text-ink">{{ totalCustomers }}</span>
+      Visar <span class="font-semibold text-ink">{{ filteredCustomers.length }}</span>
+      av <span class="font-semibold text-ink">{{ totalCustomers }}</span>
     </div>
   </div>
 </div>

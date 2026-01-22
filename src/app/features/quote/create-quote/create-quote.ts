@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CustomerStoreService } from '../../../Services/customer-store.service';
@@ -12,7 +12,7 @@ import { Product } from '../../../data/customers.data';
   templateUrl: './create-quote.html',
 })
 export class QuoteNewComponent {
-  constructor(private store: CustomerStoreService, private router: Router) {}
+  constructor(private store: CustomerStoreService, private location: Location, private router: Router) {}
 
   name = '';
   email = '';
@@ -24,6 +24,10 @@ export class QuoteNewComponent {
     this.products = checked
       ? [...this.products, p]
       : this.products.filter((x) => x !== p);
+  }
+
+    goBack(): void {
+    this.location.back();
   }
 
   save(): void {
