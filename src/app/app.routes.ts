@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { ShellComponent } from './core/layout/shell/shell/shell'; 
+import { ShellComponent } from './core/layout/shell/shell/shell';
 
 export const routes: Routes = [
   {
@@ -8,13 +8,44 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'customers' },
 
-      { path: 'customers', loadComponent: () => import('./features/customers/customers/customers').then(m => m.CustomersComponent) },
-      { path: 'customers/:id', loadComponent: () => import('./features/customers/customer-detail/customer-detail').then(m => m.CustomerDetailComponent) },
-      { path: 'customers/:id/add-product', loadComponent: () => import('./features/customers/add-product/add-product').then(m => m.AddProduct) },
+      {
+        path: 'customers',
+        loadComponent: () =>
+          import('./features/customers/customers/customers').then((m) => m.CustomersComponent),
+      },
+      {
+        path: 'customers/:id',
+        loadComponent: () =>
+          import('./features/customers/customer-detail/customer-detail').then(
+            (m) => m.CustomerDetailComponent,
+          ),
+      },
+      {
+        path: 'customers/:id/add-product',
+        loadComponent: () =>
+          import('./features/customers/add-product/add-product').then((m) => m.AddProduct),
+      },
 
-      { path: 'quote/new', loadComponent: () => import('./features/quote/create-quote/create-quote').then(m => m.CreateQuote) },
-      { path: 'agreements/activate', loadComponent: () => import('./features/agreements/activate-agreement/activate-agreement').then(m => m.ActivateAgreement) },
-      { path: 'technical-setup', loadComponent: () => import('./features/technical/technical-setup/technical-setup').then(m => m.TechnicalSetup) },
+      {
+        path: 'quote/new',
+        loadComponent: () =>
+          import('./features/quote/create-quote/create-quote').then((m) => m.QuoteNewComponent),
+      },
+      {
+        path: 'agreements/activate/:customerId',
+        loadComponent: () =>
+          import('./features/agreements/activate-agreement/activate-agreement').then(
+            (m) => m.ActivateAgreement,
+          ),
+      },
+
+      {
+        path: 'technical-setup',
+        loadComponent: () =>
+          import('./features/technical/technical-setup/technical-setup').then(
+            (m) => m.TechnicalSetup,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'customers' },

@@ -3,9 +3,7 @@
   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h1 class="text-xl font-semibold tracking-tight text-ink">Alla kunder</h1>
-      <p class="mt-1 text-sm text-ink3">
-        Filtrera på produkt, sortera och öppna kundkort.
-      </p>
+      <p class="mt-1 text-sm text-ink3">Filtrera på produkt, sortera och öppna kundkort.</p>
     </div>
 
     <div class="flex flex-wrap gap-2">
@@ -45,206 +43,212 @@
   <!-- Filters (surface) -->
   <section>
     <div class="grid gap-3 md:grid-cols-3">
-            <div>
+      <div>
         <label class="label">Sök</label>
-        <input
-          class="input"
-          placeholder="Sök kund, ID, email…"
-          [(ngModel)]="query"
-        />
+        <input class="input" placeholder="Sök kund, ID, email…" [(ngModel)]="query" />
       </div>
-      
     </div>
   </section>
 
+  <!-- Table mobile -->
+  <section class="sm:hidden card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead class="thead bg-[#ffb7004f]">
+          <tr>
+            <th class="th">Kund</th>
+            <th class="th text-right">Åtgärd</th>
+          </tr>
+        </thead>
 
-<!-- Table mobile -->
-<section class="sm:hidden card overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="table">
-      <thead class="thead bg-[#ffb7004f]">
-        <tr>
-          <th class="th">Kund</th>
-          <th class="th text-right">Åtgärd</th>
-        </tr>
-      </thead>
+        <tbody class="divide-y divide-line2">
+          <tr
+            *ngFor="let c of filteredCustomers"
+            class="row cursor-pointer"
+            (click)="openCustomer(c.id)"
+          >
+            <td class="td">
+              <div class="font-semibold text-ink">{{ c.name }}</div>
+              <div class="text-xs text-ink3 p-1.5">
+                <span *ngFor="let p of c.products" class="pill">
+                  {{ labelForProduct(p) }}
+                </span>
+              </div>
+            </td>
 
-      <tbody class="divide-y divide-line2">
-        <tr
-          *ngFor="let c of filteredCustomers"
-          class="row cursor-pointer"
-          (click)="openCustomer(c.id)"
-        >
-          <td class="td">
-            <div class="font-semibold text-ink">{{ c.name }}</div>
-            <div class="text-xs text-ink3 p-1.5">
-              <span *ngFor="let p of c.products" class="pill">
-                {{ labelForProduct(p) }}
-              </span>
-            </div>
-          </td>
-
-
-          <td class="td text-right">
-            <button
-              class="btn-accent"
-              (click)="$event.stopPropagation(); openCustomer(c.id)"
-            >
-              Visa
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<!-- Table desktop -->
-<section class="hidden sm:block card overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="table">
-      <thead class="thead bg-[#ffb7004f]">
-        <tr>
-          <th class="th">Kund</th>
-          <th class="th">Company ID</th>
-
-<th class="th">
-  <button
-    type="button"
-    class=" text-ink hover:underline cursor-pointer"
-    (click)="productsOpen = !productsOpen; $event.stopPropagation()"
-  >
-    Produkter  
-    <span class="text-xs text-ink3">
-      {{ productFilter !== 'all' ? '(' + labelForProduct(productFilter) + ')' : '' }}
-    </span>
-
-    <i class="bi bi-caret-down-fill"></i>
-  </button>
-
-
-  <div
-    *ngIf="productsOpen"
-    class="absolute z-10 mt-2 w-44 rounded-md border border-line bg-white shadow-lg"
-    (click)="$event.stopPropagation()"
-  >
-    <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('all')"
-    >
-      Alla produkter
-    </button>
-    <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('calls')"
-    >
-      Samtal
-    </button>
-    <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('email')"
-    >
-      Mejl
-    </button>
-    <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('chat')"
-    >
-      Chatt
-    </button>
-    <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('cases')"
-    >
-      Ärendeanteckningar
-    </button>
-        <button
-      class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
-      (click)="setProductFilter('other')"
-    >
-      Övriga produkter
-    </button>
-  </div>
-</th>
-
-          <th class="th">Användare</th>
-          <th class="th">
-<button
-  type="button"
-  class="text-ink hover:underline focus:outline-none cursor-pointer"
-  (click)="toggleSort('createdAt')"
->
-Startdatum
-
-  <span class=" text-ink">
-    <i
-      *ngIf="sortBy === 'createdAt' && sortDir === 'asc'"
-      class="bi bi-caret-up-fill"
-    ></i>
-
-    <i
-      *ngIf="sortBy === 'createdAt' && sortDir === 'desc'"
-      class="bi bi-caret-down-fill"
-    ></i>
-  </span>
-</button>
-</th>
-          <th class="th ">Åtgärd</th>
-        </tr>
-      </thead>
-
-      <tbody class="divide-y divide-line2">
-        <tr
-          *ngFor="let c of filteredCustomers"
-          class="row cursor-pointer"
-          (click)="openCustomer(c.id)"
-        >
-          <td class="td">
-            <div class="font-semibold text-ink">{{ c.name }}</div>
-            <div class="text-xs text-ink3">{{ c.email }}</div>
-          </td>
-
-          <td class="td text-ink2">{{ c.companyId }}</td>
-
-          <td class="td">
-            <div class="flex flex-wrap gap-1">
-              <span *ngFor="let p of c.products" class="pill">
-                {{ labelForProduct(p) }}
-              </span>
-            </div>
-          </td>
-
-          <td class="td text-ink3">{{ c.usersCount }}</td>
-
-<td class="td text-ink3">{{ formatDateISO(c.createdAt) }}</td>
-
-          <td class="td ">
-            <button
-              class="btn-accent bi bi-eye gap-2"
-              (click)="$event.stopPropagation(); openCustomer(c.id)"
-            >
-              Visa
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-
-    <!-- Footnote -->
-    <div class="flex flex-col gap-2 border-t border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="text-xs text-ink3">
-        Totalt antal kunder:
-        <span class="font-semibold text-ink">{{ totalCustomers }}</span>
-        · Totalt antal användare:
-        <span class="font-semibold text-ink">{{ totalUsers }}</span>
-      </div>
-
-      <div class="text-xs text-ink3">
-        Visar <span class="font-semibold text-ink">{{ filteredCustomers.length }}</span>
-        av <span class="font-semibold text-ink">{{ totalCustomers }}</span>
-      </div>
+            <td class="td text-right">
+              <button class="btn-accent" (click)="$event.stopPropagation(); openCustomer(c.id)">
+                Visa
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </section>
+
+  <!-- Table desktop -->
+  <section class="hidden sm:block card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead class="thead bg-[#ffb7004f]">
+          <tr>
+            <th class="th">Kund</th>
+            <th class="th">Company ID</th>
+
+            <th class="th">
+              <button
+                type="button"
+                class="text-ink hover:underline cursor-pointer"
+                (click)="productsOpen = !productsOpen; $event.stopPropagation()"
+              >
+                Produkter
+                <span class="text-xs text-ink3">
+                  {{ productFilter !== 'all' ? '(' + labelForProduct(productFilter) + ')' : '' }}
+                </span>
+
+                <i class="bi bi-caret-down-fill"></i>
+              </button>
+
+              <div
+                *ngIf="productsOpen"
+                class="absolute z-10 mt-2 w-44 rounded-md border border-line bg-white shadow-lg"
+                (click)="$event.stopPropagation()"
+              >
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('all')"
+                >
+                  Alla produkter
+                </button>
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('calls')"
+                >
+                  Samtal
+                </button>
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('email')"
+                >
+                  Mejl
+                </button>
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('chat')"
+                >
+                  Chatt
+                </button>
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('cases')"
+                >
+                  Ärendeanteckningar
+                </button>
+                <button
+                  class="block w-full px-3 py-2 text-left text-sm hover:bg-line2"
+                  (click)="setProductFilter('other')"
+                >
+                  Övriga produkter
+                </button>
+              </div>
+            </th>
+
+            <th class="th">Användare</th>
+            <th class="th">
+              <button
+                type="button"
+                class="text-ink hover:underline focus:outline-none cursor-pointer"
+                (click)="toggleSort('createdAt')"
+              >
+                Startdatum
+
+                <span class="text-ink">
+                  <i
+                    *ngIf="sortBy === 'createdAt' && sortDir === 'asc'"
+                    class="bi bi-caret-up-fill"
+                  ></i>
+
+                  <i
+                    *ngIf="sortBy === 'createdAt' && sortDir === 'desc'"
+                    class="bi bi-caret-down-fill"
+                  ></i>
+                </span>
+              </button>
+            </th>
+
+            <th class="th">Status</th>
+
+            <th class="th">Åtgärd</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-line2">
+          <tr
+            *ngFor="let c of filteredCustomers"
+            class="row cursor-pointer"
+            (click)="openCustomer(c.id)"
+          >
+            <td class="td">
+              <div class="font-semibold text-ink">{{ c.name }}</div>
+              <div class="text-xs text-ink3">{{ c.email }}</div>
+            </td>
+
+            <td class="td text-ink2">{{ c.companyId }}</td>
+
+            <td class="td">
+              <div class="flex flex-wrap gap-1">
+                <span *ngFor="let p of c.products" class="pill">
+                  {{ labelForProduct(p) }}
+                </span>
+              </div>
+            </td>
+
+            <td class="td text-ink3">{{ c.usersCount }}</td>
+
+            <td class="td text-ink3">{{ formatDateISO(c.createdAt) }}</td>
+
+            <td class="td">
+              <span
+                class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                [ngClass]="
+                  statusLabel(c.stage) === 'Klar'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-800'
+                "
+              >
+                {{ statusLabel(c.stage) }}
+              </span>
+            </td>
+
+            <td class="td">
+              <button
+                class="btn-accent bi bi-eye gap-2"
+                (click)="$event.stopPropagation(); openCustomer(c.id)"
+              >
+                Visa
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footnote -->
+  <div
+    class="flex flex-col gap-2 border-t border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div class="text-xs text-ink3">
+      Totalt antal kunder:
+      <span class="font-semibold text-ink">{{ totalCustomers }}</span>
+      · Totalt antal användare:
+      <span class="font-semibold text-ink">{{ totalUsers }}</span>
+    </div>
+
+    <div class="text-xs text-ink3">
+      Visar <span class="font-semibold text-ink">{{ filteredCustomers.length }}</span> av
+      <span class="font-semibold text-ink">{{ totalCustomers }}</span>
+    </div>
+  </div>
 </div>

@@ -1,1 +1,52 @@
-<p>create-quote works!</p>
+<div class="card card-pad space-y-4">
+  <h1 class="text-xl font-semibold text-ink">Skapa offert</h1>
+
+  <div>
+    <label class="label">Företagsnamn</label>
+    <input class="input" [(ngModel)]="name" />
+  </div>
+
+  <div>
+    <label class="label">Email</label>
+    <input class="input" [(ngModel)]="email" />
+  </div>
+
+  <div>
+    <label class="label">Company ID</label>
+    <input class="input" type="number" [(ngModel)]="companyId" />
+  </div>
+
+  <div>
+    <label class="label">Startdatum</label>
+    <input class="input" type="date" [(ngModel)]="startDate" />
+  </div>
+
+  <div class="space-y-2">
+    <div class="label">Datakällor</div>
+
+    <label class="flex items-center gap-2">
+      <input type="checkbox" (change)="toggleProduct('calls', $any($event.target).checked)" />
+      Samtal
+    </label>
+
+    <label class="flex items-center gap-2">
+      <input type="checkbox" (change)="toggleProduct('email', $any($event.target).checked)" />
+      Mejl
+    </label>
+
+    <label class="flex items-center gap-2">
+      <input type="checkbox" (change)="toggleProduct('chat', $any($event.target).checked)" />
+      Chatt
+    </label>
+
+    <label class="flex items-center gap-2">
+      <input type="checkbox" (change)="toggleProduct('cases', $any($event.target).checked)" />
+      Ärendeanteckningar
+    </label>
+  </div>
+
+  <div class="flex gap-2">
+    <button class="btn-accent" (click)="save()">Klar</button>
+    <a class="btn-secondary" routerLink="/customers">Avbryt</a>
+  </div>
+</div>

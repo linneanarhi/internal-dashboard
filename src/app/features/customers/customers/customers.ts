@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { CUSTOMERS, Customer, Product } from '../../../data/customers.data';
+import { CustomerStoreService } from '../../../Services/customer-store.service';
 
 type SortColumn = 'createdAt' | 'name' | 'companyId' | 'usersCount';
 type SortDir = 'asc' | 'desc';
@@ -15,18 +16,22 @@ type SortDir = 'asc' | 'desc';
   templateUrl: './customers.html',
 })
 export class CustomersComponent {
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private store: CustomerStoreService,
+  ) {
+    this.store.init(CUSTOMERS);
+    this.store.customers$.subscribe((list) => (this.customers = list));
+  }
 
   productFilter: 'all' | Product = 'all';
   query = '';
 
-  // Klicksortering (default: nyast först)
   sortBy: SortColumn = 'createdAt';
   sortDir: SortDir = 'desc';
 
-  customers: Customer[] = CUSTOMERS;
+  customers: Customer[] = [];
 
-  // --- Stats ---
   get countCalls(): number {
     return this.customers.filter((c) => c.products.includes('calls')).length;
   }
@@ -43,18 +48,18 @@ export class CustomersComponent {
     return this.customers.reduce((sum, c) => sum + c.usersCount, 0);
   }
 
-  // --- Klick på rubrik ---
+  statusLabel(stage: Customer['stage']): 'Klar' | 'Åtgärd' {
+    return stage === 'ACTIVE' ? 'Klar' : 'Åtgärd';
+  }
+
   toggleSort(col: SortColumn): void {
     if (this.sortBy === col) {
-      // samma kolumn = byt riktning
       this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
       return;
     }
 
-    // ny kolumn = byt kolumn + rimlig default-riktning
     this.sortBy = col;
 
-    // datum/antal brukar kännas bäst "störst först"
     if (col === 'createdAt' || col === 'usersCount') {
       this.sortDir = 'desc';
     } else {
@@ -62,19 +67,15 @@ export class CustomersComponent {
     }
   }
 
-  // --- Filter + sök + sort ---
   get filteredCustomers(): Customer[] {
     const q = this.query.trim().toLowerCase();
     let list = [...this.customers];
 
-    // filter produkt
     const p = this.productFilter;
     if (p !== 'all') {
       list = list.filter((c) => c.products.includes(p));
     }
 
-
-    // sök
     if (q) {
       list = list.filter((c) => {
         return (
@@ -86,7 +87,6 @@ export class CustomersComponent {
       });
     }
 
-    // sort (baserat på sortBy + sortDir)
     const dir = this.sortDir === 'asc' ? 1 : -1;
 
     list.sort((a, b) => {
@@ -113,7 +113,6 @@ export class CustomersComponent {
     return list;
   }
 
-  // --- Datumformat: YYYY-MM-DD ---
   formatDateISO(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -121,12 +120,10 @@ export class CustomersComponent {
     return `${y}-${m}-${day}`;
   }
 
-  // --- Navigation ---
   openCustomer(id: string): void {
     this.router.navigate(['/customers', id]);
   }
 
-  // --- Labels ---
   labelForProduct(p: Product): string {
     switch (p) {
       case 'calls':
@@ -139,19 +136,16 @@ export class CustomersComponent {
         return 'Ärendeanteckningar';
       case 'other':
         return 'Övriga produkter';
-    }  
+    }
   }
-      setProductFilter(p: 'all' | Product): void {
-  this.productFilter = p;
+  setProductFilter(p: 'all' | Product): void {
+    this.productFilter = p;
     this.productsOpen = false;
-}
+  }
 
-toggleProductFilter(p: Product): void {
-  this.productFilter = this.productFilter === p ? 'all' : p;
-}
+  toggleProductFilter(p: Product): void {
+    this.productFilter = this.productFilter === p ? 'all' : p;
+  }
 
-productsOpen = false;
-
-
-
+  productsOpen = false;
 }
