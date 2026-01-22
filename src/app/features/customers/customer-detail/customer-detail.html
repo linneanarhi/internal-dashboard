@@ -1,0 +1,127 @@
+<div class="space-y-4">
+  <!-- Title + actions -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex items-start gap-3">
+      <button
+        type="button"
+        (click)="goBack()"
+        aria-label="Tillbaka"
+        class="cursor-pointer"
+      >
+        <i class="bi bi-arrow-left"></i>
+      </button>
+
+      <div>
+        <div class="text-xs text-ink3">
+          {{ customer?.name ?? 'Okänd kund' }} [ID: {{ id }}]
+        </div>
+        <h1 class="text-xl font-semibold tracking-tight text-ink">
+          Kunddetaljer
+        </h1>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <a [routerLink]="['/customers', id, 'add-product']" class="btn-accent">
+        Lägg till produkt
+      </a>
+
+      <a routerLink="/technical-setup" class="btn-secondary">
+        Teknisk uppsättning
+      </a>
+    </div>
+  </div>
+
+  <!-- Om kund ej hittas -->
+  <div *ngIf="!customer" class="surface p-4 sm:p-6 shadow-soft">
+    <div class="text-sm font-semibold text-ink">Kund hittades inte</div>
+    <div class="mt-1 text-sm text-ink3">
+      Ingen kund med ID: <span class="font-semibold text-ink">{{ id }}</span>
+    </div>
+  </div>
+
+  <!-- Tabs wrapper (visa bara om kund finns) -->
+  <section *ngIf="customer" class="card overflow-hidden">
+    <!-- Tabs row -->
+    <div class="flex flex-wrap gap-2 border-b border-line bg-card p-3">
+      <button
+        *ngFor="let t of tabs"
+        (click)="activeTab = t.id"
+        class="tab"
+        [ngClass]="activeTab === t.id ? 'tab-active' : 'tab-idle'"
+      >
+        {{ t.label }}
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-4 sm:p-6">
+      <!-- Avtal & kontakt -->
+      <div *ngIf="activeTab === 'agreement'" class="space-y-4">
+        <!-- Table -->
+        <div class="overflow-x-auto rounded-2xl border border-line bg-card">
+          <table class="table">
+            <thead class="thead  bg-[#ffb7004f]">
+              <tr>
+                <th class="th">Profile</th>
+                <th class="th">Name</th>
+                <th class="th">Email</th>
+                <th class="th">Company ID</th>
+                <th class="th">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-line2">
+              <tr class="row">
+                <td class="td">👤</td>
+
+                <td class="td">
+                  <div class="font-semibold text-ink">
+                    {{ customer.name }}
+                  </div>
+                </td>
+
+                <td class="td text-ink2">{{ customer.email }}</td>
+                <td class="td text-ink2">{{ customer.companyId }}</td>
+
+                <td class="td">
+                  <div class="flex flex-wrap gap-2">
+                    <button class="btn-secondary px-3 py-2 text-xs">
+                      Edit
+                    </button>
+
+                    <button class="btn-danger">
+                      Remove
+                    </button>
+
+                    <button class="btn-accent px-3 py-2 text-xs">
+                      Reset Password
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile actions -->
+        <div class="sm:hidden flex flex-col gap-2">
+          <button class="btn-secondary w-full">Lägg till användare</button>
+          <button class="btn-primary w-full">Spara ändringar</button>
+        </div>
+      </div>
+
+      <!-- Other tabs placeholder -->
+      <div
+        *ngIf="activeTab !== 'agreement'"
+        class="surface p-4 sm:p-6 shadow-soft"
+      >
+        <div class="text-sm font-semibold text-ink">Innehåll kommer här</div>
+        <div class="mt-1 text-sm text-ink3">
+          Tab:
+          <span class="font-semibold text-ink">{{ activeTab }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

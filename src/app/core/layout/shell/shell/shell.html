@@ -1,0 +1,17 @@
+<div class="min-h-screen bg-app text-ink">
+  <div class="flex min-h-screen">
+    <!-- Sidebar: desktop -->
+    <app-sidebar class="hidden lg:block lg:w-72"></app-sidebar>
+
+    <!-- Main -->
+    <div class="flex-1 min-w-0">
+  
+      <main class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+       
+        <div class="surface p-4 sm:p-6 lg:p-8 shadow-soft">
+          <router-outlet></router-outlet>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

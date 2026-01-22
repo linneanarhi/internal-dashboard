@@ -1,0 +1,35 @@
+<aside class="h-screen bg-card border-r border-line">
+  <!-- Brand -->
+  <div class="p-6">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-2xl bg-accent2 text-ink flex items-center justify-center font-extrabold shadow-soft">
+        P
+      </div>
+
+      <div class="min-w-0">
+        <div class="text-base font-semibold tracking-tight text-ink">Parlametric</div>
+        <div class="text-sm text-ink3">Internal Dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="px-3 space-y-1">
+    <a
+      *ngFor="let item of nav"
+      [routerLink]="item.path"
+      routerLinkActive="bg-surface text-ink shadow-soft"
+      class="flex items-center gap-3 rounded-2xl px-3 py-2 text-ink2 hover:bg-muted hover:text-ink transition"
+    >
+      <span class="text-lg">{{ item.icon }}</span>
+      <span class="text-sm font-semibold">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <!-- Footer -->
+  <div class="mt-auto p-6">
+    <div class="text-xs text-ink3">
+      © {{ year }} Parlametric AB
+    </div>
+  </div>
+</aside>
