@@ -17,13 +17,27 @@ export class CustomerStoreService {
     }
   }
 
-  addCustomerFromQuote(payload: {
+  /** ✅ PROFFSIGT: återanvänd kund om den finns, annars skapa */
+  addOrGetCustomerFromQuote(payload: {
     name: string;
     email: string;
     companyId: number;
     products: Product[];
     createdAt: Date;
   }): Customer {
+    const existing = this._customers.value.find(c => c.companyId === payload.companyId);
+    if (existing) {
+      const updated: Customer = {
+        ...existing,
+        name: payload.name || existing.name,
+        email: payload.email || existing.email,
+        products: payload.products?.length ? payload.products : existing.products,
+      };
+
+      this._customers.next(this._customers.value.map(c => (c.id === existing.id ? updated : c)));
+      return updated;
+    }
+
     const newCustomer: Customer = {
       id: String(payload.companyId),
       name: payload.name,
@@ -32,11 +46,19 @@ export class CustomerStoreService {
       createdAt: payload.createdAt,
       products: payload.products,
       usersCount: 0,
-      stage: 'QUOTE_SENT',
+      stage: 'QUOTE_SENT', // om du har bättre stage: QUOTE_DRAFT / QUOTE_SENT
     };
 
     this._customers.next([newCustomer, ...this._customers.value]);
     return newCustomer;
+  }
+
+  /** ✅ Spara monthsLeft/valueLeft på kund för kundprofilen */
+  updateCustomerQuoteMetrics(customerId: string, monthsLeft: number, valueLeft: number): void {
+    const updated = this._customers.value.map(c =>
+      c.id === customerId ? { ...c, monthsLeft, valueLeft } : c
+    );
+    this._customers.next(updated);
   }
 
   updateStage(customerId: string, stage: CustomerStage): void {

@@ -1,53 +1,347 @@
-import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+
 import { CustomerStoreService } from '../../../Services/customer-store.service';
+import { QuoteStoreService } from '../../../Services/quote-store.service';
+import { Quote } from '../../../data/quotes.data';
 import { Product } from '../../../data/customers.data';
 
 @Component({
   selector: 'app-quote-new',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './create-quote.html',
 })
-export class QuoteNewComponent {
+export class QuoteNewComponent implements OnInit {
   constructor(
-    private store: CustomerStoreService,
+    private fb: FormBuilder,
+    private customers: CustomerStoreService,
+    private quotes: QuoteStoreService,
     private location: Location,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
-  name = '';
-  email = '';
-  companyId: number | null = null;
-  startDate = ''; // "YYYY-MM-DD"
-  products: Product[] = [];
+  // Dropdowns
+  industries = ['Bostad', 'Kontaktcenter', 'X'] as const;
+  productTypes = ['Customer service', 'Survey', 'X'] as const;
+  reportFrequencies = ['Varje månad', 'Varannan månad', 'Kvartal'] as const;
+  presentationFrequencies = [
+    'Varje månad',
+    'Varannan månad',
+    'Kvartal',
+    'Tertial',
+    'Halvår',
+    'Helår',
+    'Annat',
+  ] as const;
+  billingFrequencies = ['Varje månad', 'Kvartal', 'År', 'Annat'] as const;
 
-  toggleProduct(p: Product, checked: boolean) {
-    this.products = checked ? [...this.products, p] : this.products.filter((x) => x !== p);
+  readonly productOptions: { key: Product; label: string }[] = [
+    { key: 'calls' as Product, label: 'Samtal' },
+    { key: 'email' as Product, label: 'Mejl' },
+    { key: 'chat' as Product, label: 'Chatt' },
+    { key: 'cases' as Product, label: 'Ärenden' },
+  ];
+
+  // Viktigt: initieras i ngOnInit (för att undvika "use before init")
+  quoteId = '';
+
+  // Initieras i ngOnInit
+  form!: FormGroup;
+
+  ngOnInit(): void {
+    // 1) sätt quoteId från route eller skapa nytt
+    this.quoteId = this.route.snapshot.paramMap.get('id') ?? this.makeId();
+
+    // 2) bygg form (nu är fb initierad)
+    this.form = this.fb.group({
+      customer: this.fb.group({
+        customerName: ['', [Validators.required, Validators.minLength(2)]],
+        companyId: [null as number | null, [Validators.required, Validators.min(1)]],
+        industry: [''],
+        productType: [''],
+        salesRep: [''],
+        contactName: [''],
+        contactEmail: ['', [Validators.email]],
+        contactPhone: [''],
+      }),
+      agreement: this.fb.group({
+        customerStartDate: ['', Validators.required],
+        currentAgreementStart: [''],
+        currentAgreementEnd: [''],
+        monthlyValue: [0, [Validators.min(0)]],
+      }),
+      options: this.fb.group({
+        optionNote: [''],
+        integration: [false],
+
+        pdfReport: [false],
+        pdfYearSummary: [false],
+
+        employeeAnalysis: [false],
+        employeeAnalysisCount: [0, [Validators.min(0)]],
+
+        aiChat: [false],
+      }),
+      delivery: this.fb.group({
+        reportFrequency: [''],
+        presentationFrequency: [''],
+        billingFrequency: [''],
+      }),
+      products: this.fb.control<Product[]>([]),
+    });
+
+    // 3) edit-läge: ladda offert och patcha
+    const existing = this.quotes.getById(this.quoteId);
+    if (existing) {
+      this.patchFromQuote(existing);
+
+      // Proffsigt: lås om godkänd
+      if (existing.status === 'APPROVED') {
+        this.form.disable();
+      }
+    }
+  }
+
+  get isValidToSave(): boolean {
+    return this.form?.valid ?? false;
+  }
+
+  get monthsLeft(): number {
+    const end = this.form?.value?.agreement?.currentAgreementEnd || '';
+    return this.calcMonthsLeft(end);
+  }
+
+  get valueLeft(): number {
+    const mv = Number(this.form?.value?.agreement?.monthlyValue || 0);
+    return Math.max(0, this.monthsLeft * mv);
   }
 
   goBack(): void {
     this.location.back();
   }
 
-  save(): void {
-    if (!this.name || !this.email || !this.companyId || !this.startDate) return;
+  toggleProduct(p: Product, checked: boolean): void {
+    const current: Product[] = this.form.value.products || [];
+    const next = checked ? [...current, p] : current.filter((x) => x !== p);
+    this.form.controls['products'].setValue(next);
+  }
 
-    const [y, m, d] = this.startDate.split('-').map(Number);
-    const createdAt = new Date(y, m - 1, d);
+  /** Spara UTKAST */
+  saveDraft(): void {
+    if (!this.isValidToSave) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
-    const newCustomer = this.store.addCustomerFromQuote({
-      name: this.name,
-      email: this.email,
-      companyId: this.companyId,
-      products: this.products,
+    const quote = this.buildQuote('DRAFT');
+    this.persistQuoteAndCustomer(quote);
+
+    this.router.navigate(['/customers', quote.customerId]);
+  }
+
+  /** Markera som SKICKAD */
+  markAsSent(): void {
+    if (!this.isValidToSave) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const quote = this.buildQuote('SENT');
+    this.persistQuoteAndCustomer(quote);
+
+    // Här kan du lägga toast i framtiden.
+  }
+
+  /** GODKÄNN: lås offert och gå till avtal */
+  approveQuote(): void {
+    if (!this.isValidToSave) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const end = this.form.value.agreement?.currentAgreementEnd || '';
+    if (!end) {
+      const ctrl = this.form.get('agreement.currentAgreementEnd');
+      ctrl?.setErrors({ required: true });
+      ctrl?.markAsTouched();
+      return;
+    }
+
+    const quote = this.buildQuote('APPROVED');
+    this.persistQuoteAndCustomer(quote);
+
+    // Proffsigt: lås efter godkänd
+    this.form.disable();
+
+    this.router.navigate(['/agreements/activate'], {
+      queryParams: { quoteId: quote.id },
+    });
+  }
+
+  /** PDF-export (stub) */
+  exportPdf(): void {
+    if (!this.isValidToSave) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    window.print();
+  }
+
+  private persistQuoteAndCustomer(quote: Quote): void {
+    const createdAt = this.parseYmd(quote.customerStartDate) ?? new Date();
+
+    const customer = this.customers.addOrGetCustomerFromQuote({
+      name: quote.customerName,
+      email: quote.contactEmail || '',
+      companyId: quote.companyId ?? 0,
+      products: quote.products,
       createdAt,
     });
 
-    // tillbaka till listan (eller öppna kund)
-    this.router.navigate(['/customers']);
-    // alternativ: this.router.navigate(['/customers', newCustomer.id]);
+    quote.customerId = customer.id;
+    this.quotes.upsert(quote);
+
+    this.customers.updateCustomerQuoteMetrics(customer.id, quote.monthsLeft, quote.valueLeft);
+
+    if (quote.status === 'DRAFT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
+    if (quote.status === 'SENT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
+    if (quote.status === 'APPROVED') this.customers.updateStage(customer.id, 'QUOTE_APPROVED');
+    if (quote.status === 'CONVERTED') this.customers.updateStage(customer.id, 'ACTIVE');
+  }
+
+  private buildQuote(status: Quote['status']): Quote {
+    const existing = this.quotes.getById(this.quoteId);
+    const createdAtIso = existing?.createdAtIso ?? new Date().toISOString();
+    const updatedAtIso = new Date().toISOString();
+    const approvedAtIso =
+  status === 'APPROVED'
+    ? (existing?.approvedAtIso ?? new Date().toISOString())
+    : existing?.approvedAtIso;
+
+
+    const c = this.form.value.customer!;
+    const a = this.form.value.agreement!;
+    const o = this.form.value.options!;
+    const d = this.form.value.delivery!;
+    const products = (this.form.value.products || []) as Product[];
+
+    const monthsLeft = this.calcMonthsLeft(String(a.currentAgreementEnd || ''));
+    const monthlyValue = Number(a.monthlyValue || 0);
+    const valueLeft = Math.max(0, monthsLeft * monthlyValue);
+
+    return {
+      id: this.quoteId,
+      status,
+
+      customerId: existing?.customerId,
+
+      customerName: String(c.customerName || '').trim(),
+      companyId: c.companyId ?? null,
+
+      customerStartDate: String(a.customerStartDate || ''),
+      currentAgreementStart: String(a.currentAgreementStart || ''),
+      currentAgreementEnd: String(a.currentAgreementEnd || ''),
+
+      monthsLeft,
+      valueLeft,
+
+      monthlyValue,
+
+      optionNote: String(o.optionNote || ''),
+      integration: !!o.integration,
+
+      pdfReport: !!o.pdfReport,
+      pdfYearSummary: !!o.pdfYearSummary,
+
+      employeeAnalysis: !!o.employeeAnalysis,
+      employeeAnalysisCount: Number(o.employeeAnalysisCount || 0),
+
+      aiChat: !!o.aiChat,
+
+      productType: (c.productType as any) || '',
+      industry: (c.industry as any) || '',
+      reportFrequency: (d.reportFrequency as any) || '',
+      presentationFrequency: (d.presentationFrequency as any) || '',
+      billingFrequency: (d.billingFrequency as any) || '',
+
+      salesRep: String(c.salesRep || ''),
+      contactName: String(c.contactName || ''),
+      contactEmail: String(c.contactEmail || ''),
+      contactPhone: String(c.contactPhone || ''),
+
+      products,
+
+      createdAtIso,
+      updatedAtIso,
+      approvedAtIso,
+    };
+  }
+
+  private calcMonthsLeft(endYmd: string): number {
+    const end = this.parseYmd(endYmd);
+    if (!end) return 0;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+    if (endDate <= today) return 0;
+
+    const months =
+      (endDate.getFullYear() - today.getFullYear()) * 12 + (endDate.getMonth() - today.getMonth());
+
+    const bump = endDate.getDate() >= today.getDate() ? 1 : 0;
+    return Math.max(0, months + bump);
+  }
+
+  private parseYmd(ymd: string): Date | null {
+    if (!ymd) return null;
+    const [y, m, d] = ymd.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+
+  private makeId(): string {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  private patchFromQuote(q: Quote): void {
+    this.form.patchValue({
+      customer: {
+        customerName: q.customerName,
+        companyId: q.companyId,
+        industry: q.industry,
+        productType: q.productType,
+        salesRep: q.salesRep,
+        contactName: q.contactName,
+        contactEmail: q.contactEmail,
+        contactPhone: q.contactPhone,
+      },
+      agreement: {
+        customerStartDate: q.customerStartDate,
+        currentAgreementStart: q.currentAgreementStart,
+        currentAgreementEnd: q.currentAgreementEnd,
+        monthlyValue: q.monthlyValue,
+      },
+      options: {
+        optionNote: q.optionNote,
+        integration: q.integration,
+        pdfReport: q.pdfReport,
+        pdfYearSummary: q.pdfYearSummary,
+        employeeAnalysis: q.employeeAnalysis,
+        employeeAnalysisCount: q.employeeAnalysisCount,
+        aiChat: q.aiChat,
+      },
+      delivery: {
+        reportFrequency: q.reportFrequency,
+        presentationFrequency: q.presentationFrequency,
+        billingFrequency: q.billingFrequency,
+      },
+      products: q.products,
+    });
   }
 }

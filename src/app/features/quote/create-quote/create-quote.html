@@ -1,64 +1,269 @@
-<div class="card card-pad space-y-4">
-  
-<div class="flex items-center gap-3">
-  <button
-    type="button"
-    (click)="goBack()"
-    aria-label="Tillbaka"
-    class="cursor-pointer text-ink hover:text-ink2"
-  >
-    <i class="bi bi-arrow-left"></i>
-  </button>
+<div class="card card-pad space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="goBack()"
+        aria-label="Tillbaka"
+        class="cursor-pointer text-ink hover:text-ink2"
+      >
+        <i class="bi bi-arrow-left"></i>
+      </button>
 
-  <h1 class="text-xl font-semibold text-ink">Skapa offert</h1>
-</div>
-    <div>
-      <label class="label">Företagsnamn</label>
-      <input class="input" [(ngModel)]="name" />
+      <div>
+        <h1 class="text-xl font-semibold text-ink">Skapa offert</h1>
+        <div class="text-sm text-ink3">
+          Offert-id: <span class="text-ink font-medium">{{ quoteId }}</span>
+        </div>
+      </div>
     </div>
 
-    <div>
-      <label class="label">Email</label>
-      <input class="input" [(ngModel)]="email" />
-    </div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn-secondary" (click)="exportPdf()">Exportera PDF</button>
 
-    <div>
-      <label class="label">Company ID</label>
-      <input class="input" type="number" [(ngModel)]="companyId" />
-    </div>
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="markAsSent()"
+        [disabled]="!isValidToSave"
+      >
+        Markera som skickad
+      </button>
 
-    <div>
-      <label class="label">Startdatum</label>
-      <input class="input" type="date" [(ngModel)]="startDate" />
-    </div>
+      <button type="button" class="btn-accent" (click)="saveDraft()" [disabled]="!isValidToSave">
+        Spara utkast
+      </button>
 
-    <div class="space-y-2">
-      <div class="label">Datakällor</div>
-
-      <label class="flex items-center gap-2">
-        <input type="checkbox" (change)="toggleProduct('calls', $any($event.target).checked)" />
-        Samtal
-      </label>
-
-      <label class="flex items-center gap-2">
-        <input type="checkbox" (change)="toggleProduct('email', $any($event.target).checked)" />
-        Mejl
-      </label>
-
-      <label class="flex items-center gap-2">
-        <input type="checkbox" (change)="toggleProduct('chat', $any($event.target).checked)" />
-        Chatt
-      </label>
-
-      <label class="flex items-center gap-2">
-        <input type="checkbox" (change)="toggleProduct('cases', $any($event.target).checked)" />
-        Ärendeanteckningar
-      </label>
-    </div>
-
-    <div class="flex gap-2">
-      <button class="btn-accent" (click)="save()">Klar</button>
-      <a class="btn-secondary" (click)="goBack()">Avbryt</a>
+      <button type="button" class="btn-accent" (click)="approveQuote()" [disabled]="!isValidToSave">
+        Godkänn offert
+      </button>
     </div>
   </div>
 
+  <form [formGroup]="form" class="space-y-6">
+    <!-- KUND -->
+    <section class="space-y-3" formGroupName="customer">
+      <div class="text-sm font-semibold text-ink">Kund</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="md:col-span-2">
+          <label class="label">Företagsnamn *</label>
+          <input class="input" formControlName="customerName" />
+          <div
+            class="text-xs text-red-600"
+            *ngIf="
+              form.get('customer.customerName')?.touched &&
+              form.get('customer.customerName')?.invalid
+            "
+          >
+            Företagsnamn är obligatoriskt.
+          </div>
+        </div>
+
+        <div>
+          <label class="label">Org.nr / Kund-ID *</label>
+          <input class="input" type="number" formControlName="companyId" />
+          <div
+            class="text-xs text-red-600"
+            *ngIf="
+              form.get('customer.companyId')?.touched && form.get('customer.companyId')?.invalid
+            "
+          >
+            Ange ett giltigt nummer.
+          </div>
+        </div>
+
+        <div>
+          <label class="label">Bransch</label>
+          <select class="input" formControlName="industry">
+            <option value="">Välj…</option>
+            <option *ngFor="let x of industries" [value]="x">{{ x }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label">Produkttyp</label>
+          <select class="input" formControlName="productType">
+            <option value="">Välj…</option>
+            <option *ngFor="let x of productTypes" [value]="x">{{ x }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label">Säljare</label>
+          <input class="input" formControlName="salesRep" placeholder="Namn" />
+        </div>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div>
+          <label class="label">Kontaktperson</label>
+          <input class="input" formControlName="contactName" />
+        </div>
+        <div>
+          <label class="label">Kontakt e-post</label>
+          <input class="input" formControlName="contactEmail" />
+          <div
+            class="text-xs text-red-600"
+            *ngIf="
+              form.get('customer.contactEmail')?.touched &&
+              form.get('customer.contactEmail')?.invalid
+            "
+          >
+            Ogiltig e-post.
+          </div>
+        </div>
+        <div>
+          <label class="label">Kontakt telefon</label>
+          <input class="input" formControlName="contactPhone" />
+        </div>
+      </div>
+    </section>
+
+    <!-- AVTAL -->
+    <section class="space-y-3" formGroupName="agreement">
+      <div class="text-sm font-semibold text-ink">Avtalsperiod</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div>
+          <label class="label">Startdatum (kundstart) *</label>
+          <input class="input" type="date" formControlName="customerStartDate" />
+        </div>
+
+        <div>
+          <label class="label">Start nuvarande avtal</label>
+          <input class="input" type="date" formControlName="currentAgreementStart" />
+        </div>
+
+        <div>
+          <label class="label">Slut nuvarande avtal</label>
+          <input class="input" type="date" formControlName="currentAgreementEnd" />
+          <div
+            class="text-xs text-red-600"
+            *ngIf="
+              form.get('agreement.currentAgreementEnd')?.touched &&
+              form.get('agreement.currentAgreementEnd')?.hasError('required')
+            "
+          >
+            Slutdatum krävs för att godkänna offert.
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-line2 p-4">
+          <div class="text-sm text-ink3">Månader kvar (avtal)</div>
+          <div class="text-lg font-semibold text-ink">{{ monthsLeft }}</div>
+        </div>
+
+        <div class="rounded-xl border border-line2 p-4">
+          <div class="text-sm text-ink3">Värde kvar</div>
+          <div class="text-lg font-semibold text-ink">{{ valueLeft | number }} kr</div>
+          <div class="text-xs text-ink3">Sparas på kundprofilen</div>
+        </div>
+
+        <div>
+          <label class="label">Månadsvärde (kr)</label>
+          <input class="input" type="number" formControlName="monthlyValue" />
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUKTER & TILLVAL -->
+    <section class="space-y-3" formGroupName="options">
+      <div class="text-sm font-semibold text-ink">Produkter & tillval</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="space-y-2">
+          <div class="label">Datakällor</div>
+
+          <label class="flex items-center gap-2" *ngFor="let p of productOptions">
+            <input
+              type="checkbox"
+              [checked]="(form.value.products || []).includes(p.key)"
+              (change)="toggleProduct(p.key, $any($event.target).checked)"
+            />
+            {{ p.label }}
+          </label>
+        </div>
+
+        <div class="space-y-2">
+          <div class="label">PDF & analys</div>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" formControlName="pdfReport" />
+            PDF-rapport
+          </label>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" formControlName="pdfYearSummary" />
+            PDF-årssammanfattning
+          </label>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" formControlName="employeeAnalysis" />
+            Medarbetaranalys
+          </label>
+
+          <div *ngIf="form.get('options.employeeAnalysis')?.value" class="mt-2">
+            <label class="label">Antal (medarbetaranalys)</label>
+            <input class="input" type="number" formControlName="employeeAnalysisCount" />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="label">Övrigt</div>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" formControlName="aiChat" />
+            AI-chatt
+          </label>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" formControlName="integration" />
+            Integration
+          </label>
+
+          <label class="label mt-2">Tillval / notering</label>
+          <input class="input" formControlName="optionNote" placeholder="t.ex. specialvillkor" />
+        </div>
+      </div>
+    </section>
+
+    <!-- LEVERANS & FAKTURERING -->
+    <section class="space-y-3" formGroupName="delivery">
+      <div class="text-sm font-semibold text-ink">Leverans & fakturering</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div>
+          <label class="label">Rapportfrekvens</label>
+          <select class="input" formControlName="reportFrequency">
+            <option value="">Välj…</option>
+            <option *ngFor="let x of reportFrequencies" [value]="x">{{ x }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label">Presentationsfrekvens</label>
+          <select class="input" formControlName="presentationFrequency">
+            <option value="">Välj…</option>
+            <option *ngFor="let x of presentationFrequencies" [value]="x">{{ x }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label">Faktureringsfrekvens</label>
+          <select class="input" formControlName="billingFrequency">
+            <option value="">Välj…</option>
+            <option *ngFor="let x of billingFrequencies" [value]="x">{{ x }}</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </form>
+
+  <div class="flex gap-2">
+    <button class="btn-secondary" type="button" (click)="goBack()">Avbryt</button>
+  </div>
+</div>

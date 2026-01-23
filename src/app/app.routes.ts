@@ -32,7 +32,12 @@ export const routes: Routes = [
           import('./features/quote/create-quote/create-quote').then((m) => m.QuoteNewComponent),
       },
       {
-        path: 'agreements/activate/:customerId',
+        path: 'quote/:id',
+        loadComponent: () =>
+          import('./features/quote/create-quote/create-quote').then((m) => m.QuoteNewComponent),
+      },
+      {
+        path: 'agreements/activate',
         loadComponent: () =>
           import('./features/agreements/activate-agreement/activate-agreement').then(
             (m) => m.ActivateAgreement,

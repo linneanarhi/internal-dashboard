@@ -17,7 +17,8 @@ export type Customer = {
   createdAt: Date;
   products: Product[];
   usersCount: number;
-
+  monthsLeft?: number;
+  valueLeft?: number;
   stage: CustomerStage; 
 };
 

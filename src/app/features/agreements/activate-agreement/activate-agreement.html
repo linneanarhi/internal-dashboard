@@ -1,1 +1,118 @@
-<p>activate-agreement works!</p>
+<div class="card card-pad space-y-6">
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      (click)="goBack()"
+      aria-label="Tillbaka"
+      class="cursor-pointer text-ink hover:text-ink2"
+    >
+      <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <div>
+      <h1 class="text-xl font-semibold text-ink">Aktivera avtal</h1>
+      <div class="text-sm text-ink3" *ngIf="quoteId">
+        QuoteId: <span class="text-ink font-medium">{{ quoteId }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+    {{ error }}
+  </div>
+
+  <form *ngIf="!error && quote" [formGroup]="form" class="space-y-6">
+    <section class="space-y-3">
+      <div class="text-sm font-semibold text-ink">Kund</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="md:col-span-2">
+          <label class="label">Företagsnamn</label>
+          <input class="input" formControlName="customerName" />
+        </div>
+
+        <div>
+          <label class="label">Org.nr / Kund-ID</label>
+          <input class="input" type="number" formControlName="companyId" />
+        </div>
+
+        <div>
+          <label class="label">Kontaktperson</label>
+          <input class="input" formControlName="contactName" />
+        </div>
+
+        <div>
+          <label class="label">Kontakt e-post</label>
+          <input class="input" formControlName="contactEmail" />
+        </div>
+
+        <div>
+          <label class="label">Kontakt telefon</label>
+          <input class="input" formControlName="contactPhone" />
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-3">
+      <div class="text-sm font-semibold text-ink">Avtal</div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div>
+          <label class="label">Avtal start *</label>
+          <input class="input" type="date" formControlName="agreementStart" />
+          <div class="text-xs text-red-600" *ngIf="form.get('agreementStart')?.touched && form.get('agreementStart')?.invalid">
+            Obligatoriskt.
+          </div>
+        </div>
+
+        <div>
+          <label class="label">Avtal slut *</label>
+          <input class="input" type="date" formControlName="agreementEnd" />
+          <div class="text-xs text-red-600" *ngIf="form.get('agreementEnd')?.touched && form.get('agreementEnd')?.invalid">
+            Obligatoriskt.
+          </div>
+        </div>
+
+        <div>
+          <label class="label">Faktureringsfrekvens</label>
+          <input class="input" formControlName="billingFrequency" placeholder="t.ex. Varje månad" />
+        </div>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-line2 p-4">
+          <div class="text-sm text-ink3">Månader kvar</div>
+          <div class="text-lg font-semibold text-ink">{{ monthsLeft }}</div>
+        </div>
+
+        <div class="rounded-xl border border-line2 p-4">
+          <div class="text-sm text-ink3">Värde kvar</div>
+          <div class="text-lg font-semibold text-ink">{{ valueLeft | number }} kr</div>
+        </div>
+
+        <div>
+          <label class="label">Månadsvärde (kr)</label>
+          <input class="input" type="number" formControlName="monthlyValue" />
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-2">
+      <div class="text-sm font-semibold text-ink">Produkter</div>
+      <div class="text-sm text-ink3">
+        Valda datakällor:
+        <span class="text-ink font-medium">{{ (form.value.products || []).join(', ') || '—' }}</span>
+      </div>
+    </section>
+
+    <section class="space-y-2">
+      <div class="text-sm font-semibold text-ink">Intern notering</div>
+      <textarea class="input min-h-28" formControlName="internalNote" placeholder="T.ex. särskilda villkor…"></textarea>
+    </section>
+
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn-secondary" (click)="goBack()">Avbryt</button>
+      <button type="button" class="btn-accent" (click)="activate()">Aktivera avtal</button>
+    </div>
+  </form>
+</div>

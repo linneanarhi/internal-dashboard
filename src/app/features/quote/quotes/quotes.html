@@ -1,64 +1,217 @@
 <div class="space-y-6">
-  <div class="flex items-center gap-3">
-    <button
-      type="button"
-      (click)="goBack()"
-      aria-label="Tillbaka"
-      class="cursor-pointer text-ink hover:text-ink2"
-    >
-      <i class="bi bi-arrow-left"></i>
-    </button>
+  <!-- Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+         
+    <div>
+       <button
+        type="button"
+        (click)="goBack()"
+        aria-label="Tillbaka"
+        class="cursor-pointer text-ink hover:text-ink2"
+      >
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <h1 class="text-xl font-semibold tracking-tight text-ink">Offerter</h1>
+      <p class="mt-1 text-sm text-ink3">
+        Sök, filtrera och öppna offerter. Godkänd offert är låst.
+      </p>
+    </div>
 
-    <h1 class="text-xl font-semibold text-ink">Offerter</h1>
+    <div class="flex flex-wrap gap-2">
+      <a class="btn-accent" routerLink="/quote/new">Skapa offert</a>
+    </div>
   </div>
 
-  <!-- Skickade -->
-  <section class="card card-pad space-y-3">
-    <h2 class="font-semibold text-ink">Skickade offerter</h2>
+  <!-- Filters -->
+  <section class="card card-pad space-y-4">
+    <div class="grid gap-3 md:grid-cols-3">
+      <div>
+        <label class="label">Sök</label>
+        <input class="input" [(ngModel)]="query" placeholder="Sök på kund, orgnr, offert-id…" />
+      </div>
 
-    <div *ngIf="sentQuotes.length === 0" class="text-sm text-ink3">Inga skickade offerter</div>
+      <div>
+        <label class="label">Status</label>
+        <select class="input" [(ngModel)]="statusFilter">
+          <option value="ALL">Alla</option>
+          <option value="DRAFT">Utkast</option>
+          <option value="SENT">Skickad</option>
+          <option value="APPROVED">Godkänd</option>
+          <option value="REJECTED">Avslagen</option>
+          <option value="CONVERTED">Konverterad</option>
+        </select>
+      </div>
 
-    <ul class="divide-y divide-line2">
-      <li *ngFor="let c of sentQuotes" class="py-2 flex justify-between items-center">
-        <div>
-          <div class="font-medium text-ink">{{ c.name }}</div>
-          <div class="text-xs text-ink3">ID: {{ c.companyId }}</div>
+      <div>
+        <label class="label">Sortering</label>
+        <select class="input" [(ngModel)]="sortKey">
+          <option value="updatedAt">Senast uppdaterad</option>
+          <option value="createdAt">Skapad</option>
+          <option value="customerName">Kundnamn</option>
+          <option value="status">Status</option>
+          <option value="valueLeft">Värde kvar</option>
+        </select>
+
+        <div class="mt-2 flex gap-2">
+          <button type="button" class="btn-secondary" (click)="sortDir = 'asc'">Stigande</button>
+          <button type="button" class="btn-secondary" (click)="sortDir = 'desc'">Fallande</button>
         </div>
-
-        <a [routerLink]="['/customers', c.id]" class="btn-secondary"> Öppna kund </a>
-      </li>
-    </ul>
+      </div>
+    </div>
   </section>
 
-  <!-- Godkända -->
-  <section class="card card-pad space-y-3">
-    <h2 class="font-semibold text-ink">Godkända offerter</h2>
+  <!-- Desktop table -->
+  <section class="hidden lg:block card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="table w-full">
+        <thead class="thead">
+          <tr>
+            <th class="th cursor-pointer" (click)="toggleSort('customerName')">Kund</th>
+            <th class="th">Org.nr / Kund-ID</th>
+            <th class="th cursor-pointer" (click)="toggleSort('status')">Status</th>
+            <th class="th text-right cursor-pointer" (click)="toggleSort('valueLeft')">
+              Värde kvar
+            </th>
+            <th class="th text-right">Mån kvar</th>
+            <th class="th cursor-pointer" (click)="toggleSort('updatedAt')">Senast uppdaterad</th>
+            <th class="th text-right">Åtgärd</th>
+          </tr>
+        </thead>
 
-    <div *ngIf="approvedQuotes.length === 0" class="text-sm text-ink3">Inga godkända offerter</div>
+        <tbody class="divide-y divide-line2">
+          <tr *ngFor="let q of filteredQuotes" class="row">
+            <td class="td">
+              <div class="font-semibold text-ink">{{ q.customerName || '—' }}</div>
+              <div class="text-xs text-ink3">Offert-id: {{ q.id }}</div>
+            </td>
 
-    <ul class="divide-y divide-line2">
-      <li *ngFor="let c of approvedQuotes" class="py-2 flex justify-between items-center">
-        <div>
-          <div class="font-medium text-ink">{{ c.name }}</div>
-          <div class="text-xs text-ink3">Redo för aktivering</div>
-        </div>
+            <td class="td">
+              <span class="text-ink">{{ q.companyId ?? '—' }}</span>
+            </td>
 
-        <a [routerLink]="['/agreements/activate', c.id]" class="btn-accent"> Aktivera avtal </a>
-      </li>
-    </ul>
+            <td class="td">
+              <span
+                class="inline-flex items-center rounded-full px-2 py-1 text-xs"
+                [ngClass]="badgeClass(q.status)"
+              >
+                {{ labelStatus(q.status) }}
+              </span>
+            </td>
+
+            <td class="td text-right">
+              <span class="font-semibold text-ink">{{ q.valueLeft || 0 | number }} kr</span>
+            </td>
+
+            <td class="td text-right">
+              <span class="text-ink">{{ q.monthsLeft }}</span>
+            </td>
+
+            <td class="td">
+              <span class="text-ink">{{ formatDate(q.updatedAtIso) }}</span>
+            </td>
+
+            <td class="td">
+              <div class="flex justify-end gap-2">
+                <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna</a>
+
+                <a
+                  *ngIf="q.status === 'APPROVED'"
+                  class="btn-accent"
+                  [routerLink]="['/agreements/activate']"
+                  [queryParams]="{ quoteId: q.id }"
+                >
+                  Aktivera avtal
+                </a>
+
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  (click)="setStatus(q, 'SENT')"
+                  [disabled]="
+                    q.status === 'SENT' || q.status === 'APPROVED' || q.status === 'CONVERTED'
+                  "
+                >
+                  Markera skickad
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-accent"
+                  (click)="setStatus(q, 'APPROVED')"
+                  [disabled]="q.status === 'APPROVED' || q.status === 'CONVERTED'"
+                >
+                  Godkänn
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredQuotes.length === 0">
+            <td class="td text-ink3" colspan="7">Inga offerter matchar filtret.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
-  <!-- Historik -->
-  <section class="card card-pad space-y-3">
-    <h2 class="font-semibold text-ink">Historik</h2>
+  <!-- Mobile cards -->
+  <section class="lg:hidden space-y-3">
+    <div *ngFor="let q of filteredQuotes" class="card card-pad space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="font-semibold text-ink">{{ q.customerName || '—' }}</div>
+          <div class="text-xs text-ink3">Offert-id: {{ q.id }}</div>
+          <div class="text-xs text-ink3">Org.nr: {{ q.companyId ?? '—' }}</div>
+        </div>
 
-    <div *ngIf="completed.length === 0" class="text-sm text-ink3">Ingen historik ännu</div>
+        <span
+          class="inline-flex items-center rounded-full px-2 py-1 text-xs"
+          [ngClass]="badgeClass(q.status)"
+        >
+          {{ labelStatus(q.status) }}
+        </span>
+      </div>
 
-    <ul class="divide-y divide-line2">
-      <li *ngFor="let c of completed" class="py-2">
-        <div class="font-medium text-ink">{{ c.name }}</div>
-        <div class="text-xs text-ink3">Avtal aktivt</div>
-      </li>
-    </ul>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-xl border border-line2 p-3">
+          <div class="text-xs text-ink3">Värde kvar</div>
+          <div class="font-semibold text-ink">{{ q.valueLeft || 0 | number }} kr</div>
+        </div>
+        <div class="rounded-xl border border-line2 p-3">
+          <div class="text-xs text-ink3">Månader kvar</div>
+          <div class="font-semibold text-ink">{{ q.monthsLeft }}</div>
+        </div>
+      </div>
+
+      <div class="text-xs text-ink3">
+        Senast uppdaterad: <span class="text-ink">{{ formatDate(q.updatedAtIso) }}</span>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna</a>
+
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="setStatus(q, 'SENT')"
+          [disabled]="q.status === 'SENT' || q.status === 'APPROVED' || q.status === 'CONVERTED'"
+        >
+          Markera skickad
+        </button>
+
+        <button
+          type="button"
+          class="btn-accent"
+          (click)="setStatus(q, 'APPROVED')"
+          [disabled]="q.status === 'APPROVED' || q.status === 'CONVERTED'"
+        >
+          Godkänn
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="filteredQuotes.length === 0" class="text-sm text-ink3">
+      Inga offerter matchar filtret.
+    </div>
   </section>
 </div>
