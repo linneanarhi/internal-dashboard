@@ -1,0 +1,33 @@
+<section class="space-y-4">
+  <div class="surface p-4 sm:p-6 shadow-soft">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold text-ink">Om kunden</div>
+        <div class="mt-1 text-sm text-ink3">
+          Skriv och läs viktig info om kunden (kommentarer/historik).
+        </div>
+      </div>
+
+      <button type="button" class="btn-accent" disabled>Spara kommentar (kommer)</button>
+    </div>
+
+    <div class="mt-4 grid gap-2">
+      <label class="label" for="customerNote">Viktig info</label>
+      <textarea
+        id="customerNote"
+        class="input min-h-28"
+        placeholder="Skriv viktig info som alla bör se…"
+        disabled
+      ></textarea>
+
+      <div class="text-xs text-ink3">
+        Här kan du senare spara och visa historik med datum + vem som skrev.
+      </div>
+    </div>
+  </div>
+
+  <div class="surface p-4 sm:p-6 shadow-soft">
+    <div class="text-sm font-semibold text-ink">Historik</div>
+    <div class="mt-1 text-sm text-ink3">Lista av kommentarer/anteckningar kommer här.</div>
+  </div>
+</section>

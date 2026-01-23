@@ -1,8 +1,10 @@
 <div class="space-y-4">
-  <!-- Title + actions -->
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <!-- =======================================================
+    Header
+  ======================================================== -->
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div class="flex items-start gap-3">
-      <button type="button" (click)="goBack()" aria-label="Tillbaka" class="cursor-pointer">
+      <button type="button" class="cursor-pointer" (click)="goBack()" aria-label="Tillbaka">
         <i class="bi bi-arrow-left"></i>
       </button>
 
@@ -14,148 +16,114 @@
         <div class="flex items-center gap-2">
           <h1 class="text-xl font-semibold tracking-tight text-ink">Kunddetaljer</h1>
 
-          <!-- Status badge i header -->
           <span
             *ngIf="customer"
             class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-            [ngClass]="statusLabel(customer.stage) === 'Klar'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-yellow-100 text-yellow-800'"
+            [ngClass]="isActive(customer.stage) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
           >
             {{ statusLabel(customer.stage) }}
           </span>
         </div>
 
-        <!-- Nästa åtgärd i header -->
         <div *ngIf="customer" class="mt-1 text-xs text-ink3">
-          Nästa steg: <span class="font-medium text-ink">{{ nextActionLabel(customer.stage) }}</span>
+          Nästa steg:
+          <span class="font-medium text-ink">{{ nextActionLabel(customer.stage) }}</span>
         </div>
       </div>
     </div>
 
+    <!-- Primary actions -->
     <div class="flex flex-wrap gap-2">
-      <!-- Flödesknappar (rätt stage => rätt knapp) -->
-      <button *ngIf="canApproveQuote" class="btn-accent" (click)="approveQuote()">
-        Godkänn offert
-      </button>
+      <ng-container *ngIf="customer">
+        <button *ngIf="canApproveQuote" type="button" class="btn-accent" (click)="approveQuote()">
+          Godkänn offert
+        </button>
 
-      <button *ngIf="canActivateAgreement" class="btn-secondary" (click)="goToActivateAgreement()">
-        Aktivera avtal
-      </button>
+        <button
+          *ngIf="canActivateAgreement"
+          type="button"
+          class="btn-secondary"
+          (click)="goToActivateAgreement()"
+        >
+          Aktivera avtal
+        </button>
+      </ng-container>
 
-      <a [routerLink]="['/customers', id, 'add-product']" class="btn-accent">
-        Lägg till produkt
-      </a>
-
-      <a routerLink="/technical-setup" class="btn-secondary">
-        Teknisk uppsättning
-      </a>
+      <a [routerLink]="['/customers', id, 'add-product']" class="btn-accent">Lägg till produkt</a>
+      <a routerLink="/technical-setup" class="btn-secondary">Teknisk uppsättning</a>
     </div>
-  </div>
+  </header>
 
-  <!-- Om kund ej hittas -->
-  <div *ngIf="!customer" class="surface p-4 sm:p-6 shadow-soft">
+  <!-- Empty state -->
+  <section *ngIf="!customer" class="surface p-4 sm:p-6 shadow-soft">
     <div class="text-sm font-semibold text-ink">Kund hittades inte</div>
     <div class="mt-1 text-sm text-ink3">
       Ingen kund med ID: <span class="font-semibold text-ink">{{ id }}</span>
     </div>
-  </div>
+  </section>
 
-  <!-- Tabs wrapper (visa bara om kund finns) -->
-  <section *ngIf="customer" class="card overflow-hidden">
-    <!-- Tabs row -->
-    <div class="flex flex-wrap gap-2 border-b border-line bg-card p-3">
+  <!-- Tabs -->
+  <section *ngIf="customer as c" class="card overflow-hidden">
+    <nav class="flex flex-wrap gap-2 border-b border-line bg-card p-3" aria-label="Flikar">
       <button
         *ngFor="let t of tabs"
-        (click)="activeTab = t.id"
+        type="button"
         class="tab"
         [ngClass]="activeTab === t.id ? 'tab-active' : 'tab-idle'"
+        (click)="activeTab = t.id"
       >
         {{ t.label }}
       </button>
-    </div>
+    </nav>
 
-    <!-- Content -->
     <div class="p-4 sm:p-6">
-      <!-- Avtal & kontakt -->
-      <div *ngIf="activeTab === 'agreement'" class="space-y-4">
+      <!-- Dashboard -->
+      <app-customer-dashboard-tab
+        *ngIf="activeTab === 'dashboard'"
+        [customer]="c"
+        [customerId]="id"
+        [canApproveQuote]="canApproveQuote"
+        [canActivateAgreement]="canActivateAgreement"
+        (approveQuote)="approveQuote()"
+        (activateAgreement)="goToActivateAgreement()"
+        (addProduct)="goToAddProduct()"
+        (goTechnicalSetup)="goToTechnicalSetup()"
+        (openService)="openService()"
+        [statusLabel]="statusLabel(c.stage)"
+        [nextAction]="nextActionLabel(c.stage)"
+        [isActive]="isActive(c.stage)"
+      />
 
-        <!-- Flödeskort (tydligt vad som krävs) -->
-        <div class="surface p-4 sm:p-6 shadow-soft">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div class="text-sm font-semibold text-ink">Flöde</div>
-              <div class="mt-1 text-sm text-ink3">
-                Status:
-                <span class="font-semibold text-ink">{{ statusLabel(customer.stage) }}</span>
-                · Nästa steg:
-                <span class="font-semibold text-ink">{{ nextActionLabel(customer.stage) }}</span>
-              </div>
-            </div>
+      <!-- Avtal & offerter -->
+      <app-customer-agreements-tab
+        *ngIf="activeTab === 'agreements'"
+        [customer]="c"
+        [canApproveQuote]="canApproveQuote"
+        [canActivateAgreement]="canActivateAgreement"
+        [statusLabel]="statusLabel(c.stage)"
+        [nextAction]="nextActionLabel(c.stage)"
+        (approveQuote)="approveQuote()"
+        (activateAgreement)="goToActivateAgreement()"
+      />
 
-            <div class="flex flex-wrap gap-2">
-              <button *ngIf="canApproveQuote" class="btn-accent" (click)="approveQuote()">
-                Godkänn offert
-              </button>
+      <!-- Datakällor -->
+      <app-customer-sources-tab
+        *ngIf="activeTab === 'sources'"
+        [customer]="c"
+        (goTechnicalSetup)="goToTechnicalSetup()"
+      />
 
-              <button *ngIf="canActivateAgreement" class="btn-secondary" (click)="goToActivateAgreement()">
-                Aktivera avtal
-              </button>
-            </div>
-          </div>
-        </div>
+      <!-- Aktiva användare -->
+      <app-customer-users-tab
+        *ngIf="activeTab === 'users'"
+        [customer]="c"
+      />
 
-        <!-- Table -->
-        <div class="overflow-x-auto rounded-2xl border border-line bg-card">
-          <table class="table">
-            <thead class="thead bg-[#ffb7004f]">
-              <tr>
-                <th class="th">Profile</th>
-                <th class="th">Name</th>
-                <th class="th">Email</th>
-                <th class="th">Company ID</th>
-                <th class="th">Produkter</th>
-              </tr>
-            </thead>
-
-            <tbody class="divide-y divide-line2">
-              <tr class="row">
-                <td class="td">👤</td>
-
-                <td class="td">
-                  <div class="font-semibold text-ink">{{ customer.name }}</div>
-                </td>
-
-                <td class="td text-ink2">{{ customer.email }}</td>
-                <td class="td text-ink2">{{ customer.companyId }}</td>
-
-                <td class="td">
-                  <div class="flex flex-wrap gap-1">
-                    <span *ngFor="let p of customer.products" class="pill">
-                      {{ labelForProduct(p) }}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Mobile actions (placeholder om du vill behålla) -->
-        <div class="sm:hidden flex flex-col gap-2">
-          <button class="btn-secondary w-full">Lägg till användare</button>
-          <button class="btn-primary w-full">Spara ändringar</button>
-        </div>
-      </div>
-
-      <!-- Other tabs placeholder -->
-      <div *ngIf="activeTab !== 'agreement'" class="surface p-4 sm:p-6 shadow-soft">
-        <div class="text-sm font-semibold text-ink">Innehåll kommer här</div>
-        <div class="mt-1 text-sm text-ink3">
-          Tab:
-          <span class="font-semibold text-ink">{{ activeTab }}</span>
-        </div>
-      </div>
+      <!-- Om kunden -->
+      <app-customer-about-tab
+        *ngIf="activeTab === 'about'"
+        [customer]="c"
+      />
     </div>
   </section>
 </div>

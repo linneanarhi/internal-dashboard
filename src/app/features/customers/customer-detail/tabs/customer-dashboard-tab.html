@@ -1,0 +1,148 @@
+<section class="space-y-4">
+  <!-- Summary cards -->
+  <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Översikt">
+    <!-- Status -->
+    <div class="surface p-4 sm:p-5 shadow-soft">
+      <div class="text-sm text-ink3">Status</div>
+
+      <div class="mt-2 flex items-center gap-2">
+        <div class="text-lg font-semibold text-ink">{{ statusLabel }}</div>
+
+        <span
+          class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+          [ngClass]="isActive ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
+        >
+          {{ isActive ? 'Aktiv' : 'Åtgärd' }}
+        </span>
+      </div>
+
+      <div class="mt-1 text-xs text-ink3">
+        Nästa steg: <span class="font-medium text-ink">{{ nextAction }}</span>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="surface p-4 sm:p-5 shadow-soft">
+      <div class="text-sm text-ink3">Aktiva produkter</div>
+      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.products?.length ?? 0 }}</div>
+      <div class="mt-1 text-xs text-ink3">Tjänster kopplade till kunden</div>
+    </div>
+
+    <!-- Users -->
+    <div class="surface p-4 sm:p-5 shadow-soft">
+      <div class="text-sm text-ink3">Aktiva användare</div>
+      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.usersCount ?? 0 }}</div>
+      <div class="mt-1 text-xs text-ink3">Personer med åtkomst</div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="surface p-4 sm:p-5 shadow-soft">
+      <div class="text-sm text-ink3">Snabbåtgärder</div>
+
+      <div class="mt-3 flex flex-col gap-2">
+        <button
+          *ngIf="canApproveQuote"
+          type="button"
+          class="btn-accent w-full"
+          (click)="approveQuote.emit()"
+        >
+          Godkänn offert
+        </button>
+
+        <button
+          *ngIf="canActivateAgreement"
+          type="button"
+          class="btn-secondary w-full"
+          (click)="activateAgreement.emit()"
+        >
+          Aktivera avtal
+        </button>
+
+        <button type="button" class="btn-accent w-full" (click)="addProduct.emit()">
+          Lägg till produkt
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product cards -->
+  <section class="space-y-2" aria-label="Produkter">
+    <div class="flex items-end justify-between gap-3">
+      <div>
+        <h2 class="text-sm font-semibold text-ink">Tjänster</h2>
+        <p class="mt-0.5 text-xs text-ink3">
+          Översikt över vad kunden har aktiverat och vad som saknas.
+        </p>
+      </div>
+
+      <button type="button" class="btn-secondary" (click)="addProduct.emit()">
+        Hantera produkter
+      </button>
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div *ngFor="let p of productCards(customer.products)" class="surface p-4 shadow-soft">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-ink">{{ p.label }}</div>
+            <div class="mt-1 text-xs text-ink3">{{ p.description }}</div>
+          </div>
+
+          <span
+            class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+            [ngClass]="p.active ? 'bg-green-100 text-green-700' : 'bg-line2 text-ink2'"
+          >
+            {{ p.active ? 'Aktiv' : 'Saknas' }}
+          </span>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button *ngIf="!p.active" type="button" class="btn-accent" (click)="addProduct.emit()">
+            Lägg till
+          </button>
+
+          <button *ngIf="p.active" type="button" class="btn-secondary" (click)="openService.emit(p.id)">
+            Öppna
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agreement/setup panel -->
+  <section class="surface p-4 sm:p-6 shadow-soft">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div class="text-sm font-semibold text-ink">Avtal & uppsättning</div>
+        <div class="mt-1 text-sm text-ink3">
+          Status: <span class="font-semibold text-ink">{{ statusLabel }}</span>
+          · Nästa: <span class="font-semibold text-ink">{{ nextAction }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          *ngIf="canApproveQuote"
+          type="button"
+          class="btn-accent"
+          (click)="approveQuote.emit()"
+        >
+          Godkänn offert
+        </button>
+
+        <button
+          *ngIf="canActivateAgreement"
+          type="button"
+          class="btn-secondary"
+          (click)="activateAgreement.emit()"
+        >
+          Aktivera avtal
+        </button>
+
+        <button type="button" class="btn-secondary" (click)="goTechnicalSetup.emit()">
+          Teknisk uppsättning
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

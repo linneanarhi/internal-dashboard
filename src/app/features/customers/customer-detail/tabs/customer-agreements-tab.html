@@ -1,0 +1,43 @@
+<section class="space-y-4">
+  <div class="surface p-4 sm:p-6 shadow-soft">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div class="text-sm font-semibold text-ink">Avtal & offerter</div>
+        <div class="mt-1 text-sm text-ink3">
+          Status: <span class="font-semibold text-ink">{{ statusLabel }}</span>
+          · Nästa steg: <span class="font-semibold text-ink">{{ nextAction }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          *ngIf="canApproveQuote"
+          type="button"
+          class="btn-accent"
+          (click)="approveQuote.emit()"
+        >
+          Godkänn offert
+        </button>
+
+        <button
+          *ngIf="canActivateAgreement"
+          type="button"
+          class="btn-secondary"
+          (click)="activateAgreement.emit()"
+        >
+          Aktivera avtal
+        </button>
+
+        <button type="button" class="btn-secondary" disabled>Avbryt offert (kommer)</button>
+        <button type="button" class="btn-accent" disabled>Skapa ny offert (kommer)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="surface p-4 sm:p-6 shadow-soft">
+    <div class="text-sm font-semibold text-ink">Historik</div>
+    <div class="mt-1 text-sm text-ink3">
+      Här kommer listor för offerter, avtal och tilläggsavtal.
+    </div>
+  </div>
+</section>

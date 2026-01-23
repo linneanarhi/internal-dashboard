@@ -1,61 +1,103 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { Customer, Product } from '../../../data/customers.data';
+import { Customer } from '../../../data/customers.data';
 import { CustomerStoreService } from '../../../Services/customer-store.service';
 
-type TabId = 'services' | 'agreement' | 'sources' | 'addons' | 'users' | 'comments';
+// Tabs
+import { CustomerDashboardTabComponent } from './tabs/customer-dashboard-tab';
+import { CustomerAgreementsTabComponent } from './tabs/customer-agreements-tab';
+import { CustomerSourcesTabComponent } from './tabs/customer-sources-tab';
+import { CustomerUsersTabComponent } from './tabs/customer-users-tab';
+import { CustomerAboutTabComponent } from './tabs/customer-about-tab';
+
+type TabId = 'dashboard' | 'agreements' | 'sources' | 'users' | 'about';
 
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+
+    // Tab components
+    CustomerDashboardTabComponent,
+    CustomerAgreementsTabComponent,
+    CustomerSourcesTabComponent,
+    CustomerUsersTabComponent,
+    CustomerAboutTabComponent,
+  ],
   templateUrl: './customer-detail.html',
 })
 export class CustomerDetailComponent {
+  // =========================================================
+  // DI
+  // =========================================================
+  private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
+  private readonly router = inject(Router);
+  private readonly store = inject(CustomerStoreService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // =========================================================
+  // State
+  // =========================================================
   id = '';
   customer: Customer | null = null;
 
-  activeTab: TabId = 'services';
+  activeTab: TabId = 'dashboard';
 
-  tabs: { id: TabId; label: string }[] = [
-    { id: 'services', label: 'Aktiva tjänster' },
-    { id: 'agreement', label: 'Avtal och kontakt' },
+  readonly tabs: { id: TabId; label: string }[] = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'agreements', label: 'Avtal & offerter' },
     { id: 'sources', label: 'Datakällor' },
-    { id: 'addons', label: 'Tilläggsavtal' },
     { id: 'users', label: 'Aktiva användare' },
-    { id: 'comments', label: 'Om kunden' },
+    { id: 'about', label: 'Om kunden' },
   ];
 
-  constructor(
-    private route: ActivatedRoute,
-    private location: Location,
-    private router: Router,
-    private store: CustomerStoreService,
-  ) {
+  // =========================================================
+  // Init
+  // =========================================================
+  constructor() {
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.refreshCustomer();
 
-    // Så sidan uppdateras om stage ändras från andra sidor
-    this.store.customers$.subscribe(() => this.refreshCustomer());
+    this.store.customers$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshCustomer());
+  }
+
+  // =========================================================
+  // Navigation
+  // =========================================================
+  goBack(): void {
+    this.location.back();
   }
 
   private refreshCustomer(): void {
     this.customer = this.id ? (this.store.getById(this.id) ?? null) : null;
   }
 
-  goBack(): void {
-    this.location.back();
+  goToTechnicalSetup(): void {
+    this.router.navigate(['/technical-setup']);
   }
 
-  // --- Flödeslogik ---
+  goToAddProduct(): void {
+    this.router.navigate(['/customers', this.id, 'add-product']);
+  }
+
+  // =========================================================
+  // Flow / stage logic
+  // =========================================================
   get canApproveQuote(): boolean {
     return this.customer?.stage === 'QUOTE_SENT';
   }
 
   get canActivateAgreement(): boolean {
-    return this.customer?.stage === 'QUOTE_APPROVED' || this.customer?.stage === 'AGREEMENT_DRAFT';
+    const stage = this.customer?.stage;
+    return stage === 'QUOTE_APPROVED' || stage === 'AGREEMENT_DRAFT';
   }
 
   approveQuote(): void {
@@ -68,9 +110,19 @@ export class CustomerDetailComponent {
     this.router.navigate(['/agreements/activate', this.customer.id]);
   }
 
-  // --- UI helpers (samma som i listan, fast lokalt här) ---
+  openService(): void {
+    this.activeTab = 'sources';
+  }
+
+  // =========================================================
+  // UI helpers
+  // =========================================================
+  isActive(stage: Customer['stage']): boolean {
+    return stage === 'ACTIVE';
+  }
+
   statusLabel(stage: Customer['stage']): 'Klar' | 'Åtgärd' {
-    return stage === 'ACTIVE' ? 'Klar' : 'Åtgärd';
+    return this.isActive(stage) ? 'Klar' : 'Åtgärd';
   }
 
   nextActionLabel(stage: Customer['stage']): string {
@@ -83,21 +135,6 @@ export class CustomerDetailComponent {
         return 'Slutför och aktivera avtal';
       case 'ACTIVE':
         return '—';
-    }
-  }
-
-  labelForProduct(p: Product): string {
-    switch (p) {
-      case 'calls':
-        return 'Samtal';
-      case 'email':
-        return 'Mejl';
-      case 'chat':
-        return 'Chatt';
-      case 'cases':
-        return 'Ärendeanteckningar';
-      default:
-        return p; // fallback (eller 'Okänd produkt')
     }
   }
 }

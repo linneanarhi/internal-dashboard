@@ -167,7 +167,6 @@ export class CustomersComponent {
 
     this.sortBy = col;
 
-    // Sensible defaults per column
     this.sortDir = col === 'createdAt' || col === 'usersCount' ? 'desc' : 'asc';
   }
 
@@ -180,7 +179,6 @@ export class CustomersComponent {
     this.productsOpen = !this.productsOpen;
 
     if (this.productsOpen) {
-      // lägg på en microtask så view hinner uppdatera innan vi mäter
       queueMicrotask(() => this.positionProductsMenu());
     }
   }
@@ -200,7 +198,6 @@ export class CustomersComponent {
 
     const rect = btn.getBoundingClientRect();
 
-    // Overlayn är absolute i närmaste .relative-wrapper (från HTML)
     const wrapper = btn.closest('.relative') as HTMLElement | null;
     const wrapRect = wrapper?.getBoundingClientRect();
 
@@ -208,7 +205,7 @@ export class CustomersComponent {
     const offsetTop = wrapRect ? wrapRect.top : 0;
 
     this.productsMenuLeft = rect.left - offsetLeft;
-    this.productsMenuTop = rect.bottom - offsetTop; // precis under knappen
+    this.productsMenuTop = rect.bottom - offsetTop; 
   }
 
   @HostListener('document:click')
