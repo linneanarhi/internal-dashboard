@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -8,6 +8,7 @@ import { CustomerStoreService } from '../../../Services/customer-store.service';
 
 type SortColumn = 'createdAt' | 'name' | 'companyId' | 'usersCount';
 type SortDir = 'asc' | 'desc';
+type ProductFilter = 'all' | Product;
 
 @Component({
   selector: 'app-customers',
@@ -16,6 +17,30 @@ type SortDir = 'asc' | 'desc';
   templateUrl: './customers.html',
 })
 export class CustomersComponent {
+  // ============================================================
+  // State
+  // ============================================================
+
+  customers: Customer[] = [];
+
+  query = '';
+  productFilter: ProductFilter = 'all';
+
+  sortBy: SortColumn = 'createdAt';
+  sortDir: SortDir = 'desc';
+
+  // Dropdown (Produkter)
+  productsOpen = false;
+  productsMenuLeft = 0;
+  productsMenuTop = 0;
+
+  @ViewChild('productsBtn', { read: ElementRef })
+  private productsBtn?: ElementRef<HTMLElement>;
+
+  // ============================================================
+  // Init
+  // ============================================================
+
   constructor(
     private router: Router,
     private store: CustomerStoreService,
@@ -24,13 +49,17 @@ export class CustomersComponent {
     this.store.customers$.subscribe((list) => (this.customers = list));
   }
 
-  productFilter: 'all' | Product = 'all';
-  query = '';
+  // ============================================================
+  // Derived metrics (cards/footnote)
+  // ============================================================
 
-  sortBy: SortColumn = 'createdAt';
-  sortDir: SortDir = 'desc';
+  get totalCustomers(): number {
+    return this.customers.length;
+  }
 
-  customers: Customer[] = [];
+  get totalUsers(): number {
+    return this.customers.reduce((sum, c) => sum + c.usersCount, 0);
+  }
 
   get countCalls(): number {
     return this.customers.filter((c) => c.products.includes('calls')).length;
@@ -40,13 +69,9 @@ export class CustomersComponent {
     return this.customers.filter((c) => c.products.includes('email')).length;
   }
 
-  get totalCustomers(): number {
-    return this.customers.length;
-  }
-
-  get totalUsers(): number {
-    return this.customers.reduce((sum, c) => sum + c.usersCount, 0);
-  }
+  // ============================================================
+  // Labels / Display helpers
+  // ============================================================
 
   statusLabel(stage: Customer['stage']): 'Klar' | 'Åtgärd' {
     return stage === 'ACTIVE' ? 'Klar' : 'Åtgärd';
@@ -61,86 +86,9 @@ export class CustomersComponent {
       case 'AGREEMENT_DRAFT':
         return 'Slutför och aktivera avtal';
       case 'ACTIVE':
-        return '—';
       default:
         return '—';
     }
-  }
-
-  goToActivateAgreement(customerId: string): void {
-    this.router.navigate(['/agreements/activate', customerId]);
-  }
-
-  toggleSort(col: SortColumn): void {
-    if (this.sortBy === col) {
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-      return;
-    }
-
-    this.sortBy = col;
-
-    if (col === 'createdAt' || col === 'usersCount') {
-      this.sortDir = 'desc';
-    } else {
-      this.sortDir = 'asc';
-    }
-  }
-
-  get filteredCustomers(): Customer[] {
-    const q = this.query.trim().toLowerCase();
-    let list = [...this.customers];
-
-    const p = this.productFilter;
-    if (p !== 'all') {
-      list = list.filter((c) => c.products.includes(p));
-    }
-
-    if (q) {
-      list = list.filter((c) => {
-        return (
-          c.name.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          String(c.companyId).includes(q) ||
-          c.id.includes(q)
-        );
-      });
-    }
-
-    const dir = this.sortDir === 'asc' ? 1 : -1;
-
-    list.sort((a, b) => {
-      switch (this.sortBy) {
-        case 'createdAt': {
-          const av = a.createdAt.getTime();
-          const bv = b.createdAt.getTime();
-          return (av - bv) * dir;
-        }
-        case 'companyId': {
-          return (a.companyId - b.companyId) * dir;
-        }
-        case 'usersCount': {
-          return (a.usersCount - b.usersCount) * dir;
-        }
-        case 'name': {
-          return a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }) * dir;
-        }
-        default:
-          return 0;
-      }
-    });
-
-    return list;
-  }
-
-  formatDateISO(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  openCustomer(id: string): void {
-    this.router.navigate(['/customers', id]);
   }
 
   labelForProduct(p: Product): string {
@@ -157,14 +105,136 @@ export class CustomersComponent {
         return 'Övriga produkter';
     }
   }
-  setProductFilter(p: 'all' | Product): void {
+
+  formatDateISO(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // ============================================================
+  // Filtering + sorting
+  // ============================================================
+
+  get filteredCustomers(): Customer[] {
+    const q = this.query.trim().toLowerCase();
+    let list = [...this.customers];
+
+    // Product filter
+    if (this.productFilter !== 'all') {
+      list = list.filter((c) => c.products.includes(this.productFilter as Product));
+    }
+
+    // Search filter
+    if (q) {
+      list = list.filter((c) => {
+        return (
+          c.name.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q) ||
+          String(c.companyId).includes(q) ||
+          c.id.includes(q)
+        );
+      });
+    }
+
+    // Sorting
+    const dir = this.sortDir === 'asc' ? 1 : -1;
+
+    list.sort((a, b) => {
+      switch (this.sortBy) {
+        case 'createdAt':
+          return (a.createdAt.getTime() - b.createdAt.getTime()) * dir;
+        case 'companyId':
+          return (a.companyId - b.companyId) * dir;
+        case 'usersCount':
+          return (a.usersCount - b.usersCount) * dir;
+        case 'name':
+          return a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }) * dir;
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }
+
+  toggleSort(col: SortColumn): void {
+    if (this.sortBy === col) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.sortBy = col;
+
+    // Sensible defaults per column
+    this.sortDir = col === 'createdAt' || col === 'usersCount' ? 'desc' : 'asc';
+  }
+
+  // ============================================================
+  // Product dropdown (desktop overlay)
+  // ============================================================
+
+  toggleProducts(event: MouseEvent): void {
+    event.stopPropagation();
+    this.productsOpen = !this.productsOpen;
+
+    if (this.productsOpen) {
+      // lägg på en microtask så view hinner uppdatera innan vi mäter
+      queueMicrotask(() => this.positionProductsMenu());
+    }
+  }
+
+  setProductFilter(p: ProductFilter): void {
     this.productFilter = p;
+    this.closeProducts();
+  }
+
+  closeProducts(): void {
     this.productsOpen = false;
   }
 
-  toggleProductFilter(p: Product): void {
-    this.productFilter = this.productFilter === p ? 'all' : p;
+  private positionProductsMenu(): void {
+    const btn = this.productsBtn?.nativeElement;
+    if (!btn) return;
+
+    const rect = btn.getBoundingClientRect();
+
+    // Overlayn är absolute i närmaste .relative-wrapper (från HTML)
+    const wrapper = btn.closest('.relative') as HTMLElement | null;
+    const wrapRect = wrapper?.getBoundingClientRect();
+
+    const offsetLeft = wrapRect ? wrapRect.left : 0;
+    const offsetTop = wrapRect ? wrapRect.top : 0;
+
+    this.productsMenuLeft = rect.left - offsetLeft;
+    this.productsMenuTop = rect.bottom - offsetTop; // precis under knappen
   }
 
-  productsOpen = false;
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.productsOpen) this.closeProducts();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (this.productsOpen) this.positionProductsMenu();
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (this.productsOpen) this.positionProductsMenu();
+  }
+
+  // ============================================================
+  // Navigation
+  // ============================================================
+
+  openCustomer(id: string): void {
+    this.router.navigate(['/customers', id]);
+  }
+
+  goToActivateAgreement(customerId: string): void {
+    this.router.navigate(['/agreements/activate', customerId]);
+  }
 }
