@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 
 import { Customer, Product } from '../../../../data/customers.data';
 
@@ -14,7 +13,7 @@ type ProductCard = {
 @Component({
   selector: 'app-customer-dashboard-tab',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './customer-dashboard-tab.html',
 })
 export class CustomerDashboardTabComponent {
@@ -24,7 +23,6 @@ export class CustomerDashboardTabComponent {
   @Input() canApproveQuote = false;
   @Input() canActivateAgreement = false;
 
-  // Precomputed labels from parent (keeps this tab dumb)
   @Input({ required: true }) statusLabel!: 'Klar' | 'Åtgärd';
   @Input({ required: true }) nextAction!: string;
   @Input() isActive = false;

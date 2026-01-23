@@ -9,26 +9,10 @@
       </button>
 
       <div>
-        <div class="text-xs text-ink3">
-          {{ customer?.name ?? 'Okänd kund' }} [ID: {{ id }}]
-        </div>
-
         <div class="flex items-center gap-2">
-          <h1 class="text-xl font-semibold tracking-tight text-ink">Kunddetaljer</h1>
-
-          <span
-            *ngIf="customer"
-            class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-            [ngClass]="isActive(customer.stage) ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
-          >
-            {{ statusLabel(customer.stage) }}
-          </span>
+          <h1 class="text-sm font-semibold text-ink3">Kunddetaljer</h1>
         </div>
-
-        <div *ngIf="customer" class="mt-1 text-xs text-ink3">
-          Nästa steg:
-          <span class="font-medium text-ink">{{ nextActionLabel(customer.stage) }}</span>
-        </div>
+        <span class="text-xl font-bold tracking-tight text-ink">{{ customer?.name ?? 'Okänd kund' }}</span>
       </div>
     </div>
 

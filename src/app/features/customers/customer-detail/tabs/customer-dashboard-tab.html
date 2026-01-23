@@ -24,14 +24,14 @@
     <!-- Products -->
     <div class="surface p-4 sm:p-5 shadow-soft">
       <div class="text-sm text-ink3">Aktiva produkter</div>
-      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.products?.length ?? 0 }}</div>
+      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.products.length }}</div>
       <div class="mt-1 text-xs text-ink3">Tjänster kopplade till kunden</div>
     </div>
 
     <!-- Users -->
     <div class="surface p-4 sm:p-5 shadow-soft">
       <div class="text-sm text-ink3">Aktiva användare</div>
-      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.usersCount ?? 0 }}</div>
+      <div class="mt-2 text-lg font-semibold text-ink">{{ customer.usersCount }}</div>
       <div class="mt-1 text-xs text-ink3">Personer med åtkomst</div>
     </div>
 
