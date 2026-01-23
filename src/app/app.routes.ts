@@ -46,6 +46,12 @@ export const routes: Routes = [
             (m) => m.TechnicalSetup,
           ),
       },
+
+      {
+        path: 'quotes',
+        loadComponent: () =>
+          import('./features/quote/quotes/quotes').then((m) => m.QuotesComponent),
+      },
     ],
   },
   { path: '**', redirectTo: 'customers' },

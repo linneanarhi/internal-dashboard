@@ -12,7 +12,11 @@ import { Product } from '../../../data/customers.data';
   templateUrl: './create-quote.html',
 })
 export class QuoteNewComponent {
-  constructor(private store: CustomerStoreService, private location: Location, private router: Router) {}
+  constructor(
+    private store: CustomerStoreService,
+    private location: Location,
+    private router: Router,
+  ) {}
 
   name = '';
   email = '';
@@ -21,12 +25,10 @@ export class QuoteNewComponent {
   products: Product[] = [];
 
   toggleProduct(p: Product, checked: boolean) {
-    this.products = checked
-      ? [...this.products, p]
-      : this.products.filter((x) => x !== p);
+    this.products = checked ? [...this.products, p] : this.products.filter((x) => x !== p);
   }
 
-    goBack(): void {
+  goBack(): void {
     this.location.back();
   }
 
@@ -49,4 +51,3 @@ export class QuoteNewComponent {
     // alternativ: this.router.navigate(['/customers', newCustomer.id]);
   }
 }
-

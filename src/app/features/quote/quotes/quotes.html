@@ -1,0 +1,64 @@
+<div class="space-y-6">
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      (click)="goBack()"
+      aria-label="Tillbaka"
+      class="cursor-pointer text-ink hover:text-ink2"
+    >
+      <i class="bi bi-arrow-left"></i>
+    </button>
+
+    <h1 class="text-xl font-semibold text-ink">Offerter</h1>
+  </div>
+
+  <!-- Skickade -->
+  <section class="card card-pad space-y-3">
+    <h2 class="font-semibold text-ink">Skickade offerter</h2>
+
+    <div *ngIf="sentQuotes.length === 0" class="text-sm text-ink3">Inga skickade offerter</div>
+
+    <ul class="divide-y divide-line2">
+      <li *ngFor="let c of sentQuotes" class="py-2 flex justify-between items-center">
+        <div>
+          <div class="font-medium text-ink">{{ c.name }}</div>
+          <div class="text-xs text-ink3">ID: {{ c.companyId }}</div>
+        </div>
+
+        <a [routerLink]="['/customers', c.id]" class="btn-secondary"> Öppna kund </a>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Godkända -->
+  <section class="card card-pad space-y-3">
+    <h2 class="font-semibold text-ink">Godkända offerter</h2>
+
+    <div *ngIf="approvedQuotes.length === 0" class="text-sm text-ink3">Inga godkända offerter</div>
+
+    <ul class="divide-y divide-line2">
+      <li *ngFor="let c of approvedQuotes" class="py-2 flex justify-between items-center">
+        <div>
+          <div class="font-medium text-ink">{{ c.name }}</div>
+          <div class="text-xs text-ink3">Redo för aktivering</div>
+        </div>
+
+        <a [routerLink]="['/agreements/activate', c.id]" class="btn-accent"> Aktivera avtal </a>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Historik -->
+  <section class="card card-pad space-y-3">
+    <h2 class="font-semibold text-ink">Historik</h2>
+
+    <div *ngIf="completed.length === 0" class="text-sm text-ink3">Ingen historik ännu</div>
+
+    <ul class="divide-y divide-line2">
+      <li *ngFor="let c of completed" class="py-2">
+        <div class="font-medium text-ink">{{ c.name }}</div>
+        <div class="text-xs text-ink3">Avtal aktivt</div>
+      </li>
+    </ul>
+  </section>
+</div>

@@ -40,14 +40,29 @@
   </section>
 
   <!-- Filters (surface) -->
-  <section>
-    <div class="grid gap-3 md:grid-cols-3">
-      <div>
-        <label class="label">Sök</label>
-        <input class="input" placeholder="Sök kund, ID, email…" [(ngModel)]="query" />
-      </div>
+<section>
+  <div class="grid gap-3 md:grid-cols-3 items-end">
+    <div>
+      <label class="label">Sök</label>
+      <input
+        class="input"
+        placeholder="Sök kund, ID, email…"
+        [(ngModel)]="query"
+      />
     </div>
-  </section>
+
+    <div>
+      <label class="label opacity-0">.</label>
+      <a
+        routerLink="/quotes"
+        class="btn-secondary h-9.5 w-30 flex items-center justify-center"
+      >
+        Offerter
+      </a>
+    </div>
+  </div>
+</section>
+
 
   <!-- Table mobile -->
   <section class="sm:hidden card overflow-hidden">
