@@ -20,6 +20,9 @@ export type Customer = {
   monthsLeft?: number;
   valueLeft?: number;
   stage: CustomerStage; 
+
+  currentQuoteId?: string;
+  currentAgreementId?: string;
 };
 
 export const CUSTOMERS: Customer[] = [

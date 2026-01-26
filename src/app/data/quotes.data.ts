@@ -19,7 +19,7 @@ export interface Quote {
   id: string;
   status: QuoteStatus;
 
-  customerId?: string;        // sätts när kund skapats
+  customerId: string;       
   customerName: string;
   companyId: number | null;
 
