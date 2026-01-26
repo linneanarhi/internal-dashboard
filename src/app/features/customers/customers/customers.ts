@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
+import { resolveCustomerFlowState } from '../../../core/flow/flow-resolver';
+import { QuoteStoreService } from '../../../Services/quote-store.service';
+import { AgreementStoreService } from '../../../Services/agreement-store.service';
+import { SetupStoreService } from '../../../Services/setup-store.service';
+
 import { CUSTOMERS, Customer, Product } from '../../../data/customers.data';
 import { CustomerStoreService } from '../../../Services/customer-store.service';
 
@@ -44,6 +49,9 @@ export class CustomersComponent {
   constructor(
     private router: Router,
     private store: CustomerStoreService,
+    private quoteStore: QuoteStoreService,
+    private agreements: AgreementStoreService,
+    private setups: SetupStoreService,
   ) {
     this.store.init(CUSTOMERS);
     this.store.customers$.subscribe((list) => (this.customers = list));
@@ -70,26 +78,36 @@ export class CustomersComponent {
   }
 
   // ============================================================
-  // Labels / Display helpers
+  // Flow state (NEW)
   // ============================================================
 
-  statusLabel(stage: Customer['stage']): 'Klar' | 'Åtgärd' {
-    return stage === 'ACTIVE' ? 'Klar' : 'Åtgärd';
+  flow(c: Customer) {
+    const qid = (c as any).currentQuoteId as string | undefined;
+    const aid = (c as any).currentAgreementId as string | undefined;
+
+    const quote = qid ? this.quoteStore.getById(qid) : undefined;
+
+    const agreement =
+      aid && typeof (this.agreements as any).getById === 'function'
+        ? (this.agreements as any).getById(aid)
+        : undefined;
+
+    const setup =
+      typeof (this.setups as any).getByCustomer === 'function'
+        ? (this.setups as any).getByCustomer(c.id)
+        : undefined;
+
+    return resolveCustomerFlowState({
+      customer: c,
+      currentQuote: quote,
+      agreementStatus: agreement?.status,
+      setupStatus: setup?.status,
+    });
   }
 
-  nextActionLabel(stage: Customer['stage']): string {
-    switch (stage) {
-      case 'QUOTE_SENT':
-        return 'Invänta godkännande av offert';
-      case 'QUOTE_APPROVED':
-        return 'Aktivera avtal';
-      case 'AGREEMENT_DRAFT':
-        return 'Slutför och aktivera avtal';
-      case 'ACTIVE':
-      default:
-        return '—';
-    }
-  }
+  // ============================================================
+  // Display helpers
+  // ============================================================
 
   labelForProduct(p: Product): string {
     switch (p) {
@@ -166,7 +184,6 @@ export class CustomersComponent {
     }
 
     this.sortBy = col;
-
     this.sortDir = col === 'createdAt' || col === 'usersCount' ? 'desc' : 'asc';
   }
 
@@ -205,7 +222,7 @@ export class CustomersComponent {
     const offsetTop = wrapRect ? wrapRect.top : 0;
 
     this.productsMenuLeft = rect.left - offsetLeft;
-    this.productsMenuTop = rect.bottom - offsetTop; 
+    this.productsMenuTop = rect.bottom - offsetTop;
   }
 
   @HostListener('document:click')
@@ -231,7 +248,12 @@ export class CustomersComponent {
     this.router.navigate(['/customers', id]);
   }
 
-  goToActivateAgreement(customerId: string): void {
-    this.router.navigate(['/agreements/activate', customerId]);
+  goToActivateAgreement(c: Customer): void {
+    const quoteId = (c as any).currentQuoteId as string | undefined;
+    if (!quoteId) return;
+
+    this.router.navigate(['/agreements/activate'], {
+      queryParams: { quoteId },
+    });
   }
 }

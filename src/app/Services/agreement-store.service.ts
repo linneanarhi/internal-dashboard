@@ -1,44 +1,49 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { Agreement } from '../core/models/flow.models';
+
+export type AgreementStatus = 'PENDING_SETUP' | 'ACTIVE';
+
+export type Agreement = {
+  id: string;
+  customerId: string;
+  status: AgreementStatus;
+  createdAtIso: string;
+  products: string[];
+  pdfUrl?: string;
+};
 
 @Injectable({ providedIn: 'root' })
 export class AgreementStoreService {
-  private list: Agreement[] = [];
-  agreements$ = new BehaviorSubject<Agreement[]>([]);
+  private readonly _agreements = new BehaviorSubject<Agreement[]>([]);
+  agreements$ = this._agreements.asObservable();
 
-  init(seed: Agreement[]) {
-    this.list = [...seed];
-    this.emit();
+  get snapshot(): Agreement[] {
+    return this._agreements.value;
   }
 
-  getById(id: string) {
-    return this.list.find(a => a.id === id) ?? null;
+  getById(id: string): Agreement | undefined {
+    return this._agreements.value.find((a) => a.id === id);
   }
 
-  getByCustomer(customerId: string) {
-    return this.list.filter(a => a.customerId === customerId);
+  getByCustomer(customerId: string): Agreement[] {
+    return this._agreements.value.filter((a) => a.customerId === customerId);
   }
 
-  createAgreement(input: Omit<Agreement, 'id' | 'createdAtIso'>) {
-    const a: Agreement = {
+  createAgreement(input: Omit<Agreement, 'id' | 'createdAtIso'>): Agreement {
+    const agreement: Agreement = {
       ...input,
-      id: 'a_' + Math.random().toString(36).slice(2),
+      id: `a-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       createdAtIso: new Date().toISOString(),
     };
-    this.list.unshift(a);
-    this.emit();
-    return a;
+
+    const next = [agreement, ...this._agreements.value];
+    this._agreements.next(next);
+
+    return agreement;
   }
 
-  update(id: string, patch: Partial<Agreement>) {
-    const idx = this.list.findIndex(a => a.id === id);
-    if (idx === -1) return;
-    this.list[idx] = { ...this.list[idx], ...patch };
-    this.emit();
-  }
-
-  private emit() {
-    this.agreements$.next([...this.list]);
+  update(id: string, patch: Partial<Agreement>): void {
+    const next = this._agreements.value.map((a) => (a.id === id ? { ...a, ...patch } : a));
+    this._agreements.next(next);
   }
 }

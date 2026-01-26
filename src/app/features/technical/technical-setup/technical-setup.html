@@ -1,1 +1,72 @@
-<p>Kommer</p>
+<div class="space-y-6">
+  <header class="flex items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+      <button type="button" class="cursor-pointer" (click)="goBack()" aria-label="Tillbaka">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+
+      <div>
+        <h1 class="text-xl font-semibold text-ink">Teknisk uppsättning</h1>
+        <p class="mt-1 text-sm text-ink3" *ngIf="customerId">
+          Kund: <span class="font-semibold text-ink">{{ customerName || customerId }}</span>
+        </p>
+        <p class="mt-1 text-sm text-ink3" *ngIf="!customerId">
+          Öppna denna sida från en kund (så att customerId följer med).
+        </p>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button type="button" class="btn-secondary" (click)="save()" [disabled]="!customerId">
+        Spara
+      </button>
+      <button type="button" class="btn-accent" (click)="markComplete()" [disabled]="!customerId">
+        Markera som klar
+      </button>
+    </div>
+  </header>
+
+  <section class="card card-pad space-y-4">
+    <div>
+      <label class="label">Status</label>
+      <select class="input" [(ngModel)]="status" [disabled]="!customerId">
+        <option value="INCOMPLETE">INCOMPLETE</option>
+        <option value="COMPLETE">COMPLETE</option>
+      </select>
+      <p class="mt-1 text-xs text-ink3">När status blir COMPLETE kan avtalet aktiveras.</p>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2">
+      <div class="space-y-2">
+        <div class="text-sm font-semibold text-ink">API-key</div>
+
+        <div>
+          <label class="label">Namn</label>
+          <input class="input" [(ngModel)]="apiKeyName" [disabled]="!customerId" />
+        </div>
+
+        <div>
+          <label class="label">Maskad</label>
+          <input class="input" [(ngModel)]="apiKeyMasked" [disabled]="!customerId" />
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-sm font-semibold text-ink">Datakälla</div>
+
+        <div>
+          <label class="label">Namn</label>
+          <input class="input" [(ngModel)]="dataSourceName" [disabled]="!customerId" />
+        </div>
+
+        <div>
+          <label class="label">Status</label>
+          <select class="input" [(ngModel)]="dataSourceStatus" [disabled]="!customerId">
+            <option value="DISCONNECTED">DISCONNECTED</option>
+            <option value="CONNECTED">CONNECTED</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
