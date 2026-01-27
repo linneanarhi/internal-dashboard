@@ -108,16 +108,19 @@ export class CustomerDetailComponent implements OnInit {
     });
   }
 
+  goHome() {
+    this.router.navigate(['/customers']);
+  }
+
   goToAddProduct(): void {
     this.router.navigate(['/customers', this.id, 'add-product']);
   }
 
   editQuote(): void {
-  const quoteId = this.currentQuote?.id;
-  if (!quoteId) return;
-  this.router.navigate(['/quote', quoteId]);
-}
-
+    const quoteId = this.currentQuote?.id;
+    if (!quoteId) return;
+    this.router.navigate(['/quote', quoteId]);
+  }
 
   openService(): void {}
 

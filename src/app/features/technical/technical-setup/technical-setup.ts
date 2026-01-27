@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 
 import { CustomerStoreService } from '../../../Services/customer-store.service';
 import { SetupStoreService } from '../../../Services/setup-store.service';
-import { AgreementStoreService } from '../../../Services/agreement-store.service';
 
 @Component({
   selector: 'app-technical-setup',
@@ -20,11 +19,13 @@ export class TechnicalSetupComponent implements OnInit {
     private location: Location,
     private customers: CustomerStoreService,
     private setups: SetupStoreService,
-    private agreements: AgreementStoreService,
   ) {}
 
   customerId = '';
   customerName = '';
+
+  // Kommer vi från aktivera-sidan?
+  returnQuoteId = '';
 
   // “setup-modell” (enkelt)
   status: 'INCOMPLETE' | 'COMPLETE' = 'INCOMPLETE';
@@ -35,8 +36,12 @@ export class TechnicalSetupComponent implements OnInit {
   dataSourceName = 'Telefoni';
   dataSourceStatus: 'DISCONNECTED' | 'CONNECTED' = 'DISCONNECTED';
 
+  // ✅ Modal state
+  showAfterCompleteModal = false;
+
   ngOnInit(): void {
     this.customerId = this.route.snapshot.queryParamMap.get('customerId') ?? '';
+    this.returnQuoteId = this.route.snapshot.queryParamMap.get('quoteId') ?? '';
 
     const customer = this.customerId ? this.customers.getById(this.customerId) : undefined;
     this.customerName = customer?.name ?? '';
@@ -76,22 +81,47 @@ export class TechnicalSetupComponent implements OnInit {
     });
   }
 
+  /**
+   * ✅ Markera COMPLETE men aktivera INTE avtalet här.
+   * Efteråt: visa modal och låt användaren välja vart den vill.
+   */
   markComplete(): void {
     if (!this.customerId) return;
 
-    // 1) setup COMPLETE
     this.status = 'COMPLETE';
     this.save();
 
-    // 2) om kunden har avtal → sätt ACTIVE
-    const customer = this.customers.getById(this.customerId);
-    const agreementId = (customer as any)?.currentAgreementId as string | undefined;
+    // Visa fråga
+    this.showAfterCompleteModal = true;
+  }
 
-    if (agreementId && typeof (this.agreements as any).update === 'function') {
-      (this.agreements as any).update(agreementId, { status: 'ACTIVE' });
+  // ✅ Modal actions
+  closeModal(): void {
+    this.showAfterCompleteModal = false;
+  }
+
+  goHome() {
+    this.router.navigate(['/customers']);
+  }
+
+  goToCustomer(): void {
+    this.showAfterCompleteModal = false;
+    this.router.navigate(['/customers', this.customerId]);
+  }
+
+  goToActivateAgreement(): void {
+    this.showAfterCompleteModal = false;
+
+    // Om vi kom hit från ActivateAgreement skickar vi tillbaka samma quoteId
+    if (this.returnQuoteId) {
+      this.router.navigate(['/agreements/activate'], {
+        queryParams: { quoteId: this.returnQuoteId },
+      });
+      return;
     }
 
-    // 3) tillbaka till kund
+    // Annars kan man inte aktivera utan quoteId (activate-sidan kräver quoteId)
+    // Så vi går tillbaka till kunden i så fall.
     this.router.navigate(['/customers', this.customerId]);
   }
 }

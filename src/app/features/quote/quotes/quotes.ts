@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { AgreementStoreService } from '../../../Services/agreement-store.service';
@@ -21,6 +21,7 @@ export class QuotesComponent {
   constructor(
     public quoteStore: QuoteStoreService,
     private location: Location,
+    private router: Router,
     private agreements: AgreementStoreService,
     private customers: CustomerStoreService,
     private setups: SetupStoreService,
@@ -34,6 +35,10 @@ export class QuotesComponent {
 
   goBack(): void {
     this.location.back();
+  }
+
+  goHome() {
+    this.router.navigate(['/customers']);
   }
 
   // ========= Derived (körs i template) =========
@@ -61,23 +66,48 @@ export class QuotesComponent {
 
   // ========= Actions =========
 
-setStatus(q: Quote, status: 'DRAFT' | 'SENT' | 'APPROVED'): void {
-  // 1) uppdatera quote
-  this.quoteStore.updateStatus(q.id, status);
+  setStatus(q: Quote, status: 'DRAFT' | 'SENT' | 'APPROVED'): void {
+    // 1) uppdatera quote
+    this.quoteStore.updateStatus(q.id, status);
 
-  // 2) bara vid APPROVED ska vi skapa nästa steg
-  if (status !== 'APPROVED') return;
+    // 2) bara vid APPROVED ska vi skapa nästa steg
+    if (status !== 'APPROVED') return;
 
-  const customerId = q.customerId; // ska nu alltid finnas
+    const customerId = q.customerId; // ska nu alltid finnas
 
-  // 3) skapa avtal om kunden inte redan har ett kopplat
-  const customer = this.customers.getById(customerId);
+    // 3) skapa avtal om kunden inte redan har ett kopplat
+    const customer = this.customers.getById(customerId);
 
-  if (customer?.currentAgreementId) {
-    // Koppla ändå “currentQuoteId” så kund pekar på senaste offerten
-    this.customers.updateCustomer(customerId, { currentQuoteId: q.id });
+    if (customer?.currentAgreementId) {
+      // Koppla ändå “currentQuoteId” så kund pekar på senaste offerten
+      this.customers.updateCustomer(customerId, { currentQuoteId: q.id });
 
-    // Se till att setup finns
+      // Se till att setup finns
+      if (!this.setups.getByCustomer(customerId)) {
+        this.setups.upsert({
+          customerId,
+          status: 'INCOMPLETE',
+          apiKeys: [{ name: 'Primary API key', masked: '••••••••••1234' }],
+          dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
+        });
+      }
+      return;
+    }
+
+    const agreement = this.agreements.createAgreement({
+      customerId,
+      products: q.products,
+      status: 'PENDING_SETUP',
+      pdfUrl: '/mock/agreement.pdf',
+    });
+
+    // 4) koppla kunden till aktuell quote + agreement
+    this.customers.updateCustomer(customerId, {
+      currentQuoteId: q.id,
+      currentAgreementId: agreement.id,
+    });
+
+    // 5) setup-stub om saknas
     if (!this.setups.getByCustomer(customerId)) {
       this.setups.upsert({
         customerId,
@@ -86,33 +116,7 @@ setStatus(q: Quote, status: 'DRAFT' | 'SENT' | 'APPROVED'): void {
         dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
       });
     }
-    return;
   }
-
-  const agreement = this.agreements.createAgreement({
-    customerId,
-    products: q.products,
-    status: 'PENDING_SETUP',
-    pdfUrl: '/mock/agreement.pdf',
-  });
-
-  // 4) koppla kunden till aktuell quote + agreement
-  this.customers.updateCustomer(customerId, {
-    currentQuoteId: q.id,
-    currentAgreementId: agreement.id,
-  });
-
-  // 5) setup-stub om saknas
-  if (!this.setups.getByCustomer(customerId)) {
-    this.setups.upsert({
-      customerId,
-      status: 'INCOMPLETE',
-      apiKeys: [{ name: 'Primary API key', masked: '••••••••••1234' }],
-      dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
-    });
-  }
-}
-
 
   // ========= Helpers =========
 

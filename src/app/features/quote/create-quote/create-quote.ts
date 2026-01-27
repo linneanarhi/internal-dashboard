@@ -229,7 +229,9 @@ export class QuoteNewComponent implements OnInit {
     }
 
     // 1) Hämta/Skapa kund
-    const prefill = this.prefillCustomerId ? this.customers.getById(this.prefillCustomerId) : undefined;
+    const prefill = this.prefillCustomerId
+      ? this.customers.getById(this.prefillCustomerId)
+      : undefined;
 
     const customer = prefill
       ? (() => {
@@ -310,7 +312,9 @@ export class QuoteNewComponent implements OnInit {
     const createdAtIso = existing?.createdAtIso ?? new Date().toISOString();
     const updatedAtIso = new Date().toISOString();
     const approvedAtIso =
-      status === 'APPROVED' ? existing?.approvedAtIso ?? new Date().toISOString() : existing?.approvedAtIso;
+      status === 'APPROVED'
+        ? (existing?.approvedAtIso ?? new Date().toISOString())
+        : existing?.approvedAtIso;
 
     const c = this.form.value.customer!;
     const a = this.form.value.agreement!;
@@ -433,5 +437,9 @@ export class QuoteNewComponent implements OnInit {
       },
       products: q.products,
     });
+  }
+
+  goHome() {
+    this.router.navigate(['/customers']);
   }
 }

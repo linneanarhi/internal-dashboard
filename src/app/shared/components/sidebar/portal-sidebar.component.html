@@ -1,0 +1,89 @@
+<nav
+  class="portal-sidebar"
+  [class.expanded]="isExpanded"
+  (mouseenter)="isExpanded = true"
+  (mouseleave)="isExpanded = false"
+  >
+  <div class="sidebar-header">
+    <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-small" />
+    <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-full" />
+  </div>
+
+  <hr class="sidebar-divider" />
+
+  <div class="user-panel" role="region" aria-label="User panel">
+    <div class="user-avatar" [attr.title]="userName">
+      <img
+        [src]="effectiveAvatarUrl"
+        alt="Avatar of {{ userName }}"
+        class="user-avatar-img"
+        loading="lazy"
+        />
+      <ng-template #avatarIcon>
+        <i
+          class="bi bi-person-fill avatar-fallback-icon"
+          aria-hidden="true"
+        ></i>
+      </ng-template>
+    </div>
+
+    <div class="user-info" [attr.aria-hidden]="!isExpanded">
+      <div class="user-name">{{ userName }}</div>
+      <div class="user-level">{{ userLevel }}</div>
+    </div>
+  </div>
+  <hr class="sidebar-divider" />
+  <ul class="menu">
+    @for (item of menuItems; track item) {
+      <li
+        class="menu-item"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        >
+        <i class="bi {{ item.icon }}"></i>
+        <span class="label">{{ item.label }}</span>
+      </li>
+    }
+  </ul>
+
+  <hr class="sidebar-divider" />
+
+  <!-- Action buttons at the bottom -->
+  <ul class="menu-bottom">
+
+    <li class="menu-item" routerLink="/" routerLinkActive="active">
+      <i class="bi bi-gear-fill"></i>
+      <span class="label">Inställningar</span>
+    </li>
+
+    <li class="menu-item" routerLink="/about-us" routerLinkActive="active">
+      <i class="bi bi-people-fill"></i>
+      <span class="label">Om oss</span>
+    </li>
+    <li class="menu-item" (click)="exportChat()">
+      <i class="bi bi-download"></i>
+      <span class="label">Exportera chatt</span>
+    </li>
+    <li class="menu-item" (click)="openHelp()">
+      <i class="bi bi-question-circle-fill"></i>
+      <span class="label">Hjälp</span>
+    </li>
+
+    <li class="menu-item">
+      <i class="bi bi-translate"></i>
+      <span class="label">Språk</span>
+    </li>
+    <li class="menu-item" (click)="toggleTheme()">
+      <i
+        class="bi"
+        [class.bi-moon-stars-fill]="isDarkTheme"
+        [class.bi-sun-fill]="!isDarkTheme"
+      ></i>
+      <span class="label">Byt tema</span>
+    </li>
+    <li class="logout-item" (click)="logout()">
+      <i class="bi bi-box-arrow-right"></i>
+      <span class="label">Logga ut</span>
+    </li>
+  </ul>
+</nav>

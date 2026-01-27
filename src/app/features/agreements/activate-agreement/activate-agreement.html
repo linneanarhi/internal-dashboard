@@ -1,39 +1,66 @@
 <div class="space-y-6">
+
+  <!-- Header -->
   <header class="flex items-start justify-between gap-3">
-    <div class="flex items-start gap-3">
-      <button type="button" class="cursor-pointer" (click)="goBack()" aria-label="Tillbaka">
+    <div class="flex items-start gap-10">
+      <button
+        type="button"
+        class="cursor-pointer"
+        (click)="goBack()"
+        aria-label="Tillbaka">
         <i class="bi bi-arrow-left"></i>
+      </button>
+
+      <button
+        type="button"
+        class="cursor-pointer"
+        routerLink="/customers"
+        aria-label="Till kundlista">
+        <i class="bi bi-house-door-fill"></i>
       </button>
 
       <div>
         <h1 class="text-xl font-semibold text-ink">Aktivera avtal</h1>
         <p class="mt-1 text-sm text-ink3" *ngIf="quote">
-          Offert: <span class="font-semibold text-ink">{{ quote.id }}</span>
-          · Kund: <span class="font-semibold text-ink">{{ quote.customerName }}</span>
+          Offert:
+          <span class="font-semibold text-ink">{{ quote.id }}</span>
+          · Kund:
+          <span class="font-semibold text-ink">{{ quote.customerName }}</span>
         </p>
       </div>
     </div>
   </header>
 
+  <!-- Error -->
   <section *ngIf="error" class="card card-pad border border-red-200 bg-red-50">
-    <div class="text-sm font-semibold text-red-800">Det gick inte att fortsätta</div>
-    <div class="mt-1 text-sm text-red-700">{{ error }}</div>
+    <div class="text-sm font-semibold text-red-800">
+      Det gick inte att fortsätta
+    </div>
+    <div class="mt-1 text-sm text-red-700">
+      {{ error }}
+    </div>
   </section>
 
   <!-- Gate: setup status -->
   <section class="card card-pad space-y-3" *ngIf="quote">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <div class="text-sm font-semibold text-ink">Krav innan aktivering</div>
+        <div class="text-sm font-semibold text-ink">
+          Krav innan aktivering
+        </div>
         <div class="mt-1 text-sm text-ink3">
-          Setup måste vara <span class="font-semibold text-ink">COMPLETE</span>.
+          Setup måste vara
+          <span class="font-semibold text-ink">COMPLETE</span>.
         </div>
       </div>
 
       <span
         class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-        [ngClass]="setupStatus === 'COMPLETE' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
-      >
+        [ngClass]="
+          setupStatus === 'COMPLETE'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-yellow-100 text-yellow-800'
+        ">
         Setup: {{ setupStatus }}
       </span>
     </div>
@@ -43,28 +70,52 @@
     </div>
 
     <div *ngIf="setupStatus !== 'COMPLETE'">
-      <button type="button" class="btn-secondary" (click)="goToTechnicalSetup()">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="goToTechnicalSetup()">
         Öppna teknisk uppsättning
       </button>
     </div>
   </section>
 
   <!-- Form -->
-  <form class="card card-pad space-y-4" [formGroup]="form" *ngIf="quote">
+  <form
+    class="card card-pad space-y-4"
+    [formGroup]="form"
+    *ngIf="quote">
+
     <div>
       <label class="label">Avtalsnamn</label>
-      <input class="input" formControlName="agreementName" />
-      <p class="mt-1 text-xs text-ink3">Internt namn, syns i portalen.</p>
+      <input
+        class="input"
+        formControlName="agreementName" />
+      <p class="mt-1 text-xs text-ink3">
+        Internt namn, syns i portalen.
+      </p>
     </div>
 
     <div>
       <label class="label">Notering</label>
-      <textarea class="input min-h-24" formControlName="note"></textarea>
+      <textarea
+        class="input min-h-24"
+        formControlName="note">
+      </textarea>
     </div>
 
     <div class="flex gap-2">
-      <button type="button" class="btn-secondary" (click)="goBack()">Avbryt</button>
-      <button type="button" class="btn-accent" (click)="activate()" [disabled]="!canActivate">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="goBack()">
+        Avbryt
+      </button>
+
+      <button
+        type="button"
+        class="btn-accent"
+        (click)="activate()"
+        [disabled]="!canActivate">
         Aktivera
       </button>
     </div>
@@ -73,4 +124,5 @@
       Du kan aktivera först när offerten är godkänd och setup är COMPLETE.
     </p>
   </form>
+
 </div>
