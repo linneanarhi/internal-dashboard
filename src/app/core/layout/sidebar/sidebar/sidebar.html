@@ -3,7 +3,7 @@
   [class.expanded]="isExpanded"
   (mouseenter)="isExpanded = true"
   (mouseleave)="isExpanded = false"
-  >
+>
   <div class="sidebar-header">
     <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-small" />
     <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-full" />
@@ -18,12 +18,9 @@
         alt="Avatar of {{ userName }}"
         class="user-avatar-img"
         loading="lazy"
-        />
+      />
       <ng-template #avatarIcon>
-        <i
-          class="bi bi-person-fill avatar-fallback-icon"
-          aria-hidden="true"
-        ></i>
+        <i class="bi bi-person-fill avatar-fallback-icon" aria-hidden="true"></i>
       </ng-template>
     </div>
 
@@ -35,11 +32,7 @@
   <hr class="sidebar-divider" />
   <ul class="menu">
     @for (item of menuItems; track item) {
-      <li
-        class="menu-item"
-        [routerLink]="item.route"
-        routerLinkActive="active"
-        >
+      <li class="menu-item" [routerLink]="item.route" routerLinkActive="active">
         <i class="bi {{ item.icon }}"></i>
         <span class="label">{{ item.label }}</span>
       </li>
@@ -50,7 +43,6 @@
 
   <!-- Action buttons at the bottom -->
   <ul class="menu-bottom">
-
     <li class="menu-item" routerLink="/" routerLinkActive="active">
       <i class="bi bi-gear-fill"></i>
       <span class="label">Inställningar</span>
@@ -74,11 +66,7 @@
       <span class="label">Språk</span>
     </li>
     <li class="menu-item" (click)="toggleTheme()">
-      <i
-        class="bi"
-        [class.bi-moon-stars-fill]="isDarkTheme"
-        [class.bi-sun-fill]="!isDarkTheme"
-      ></i>
+      <i class="bi" [class.bi-moon-stars-fill]="isDarkTheme" [class.bi-sun-fill]="!isDarkTheme"></i>
       <span class="label">Byt tema</span>
     </li>
     <li class="logout-item" (click)="logout()">

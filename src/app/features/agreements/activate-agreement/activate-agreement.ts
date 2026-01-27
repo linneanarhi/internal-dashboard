@@ -59,9 +59,10 @@ export class ActivateAgreement implements OnInit, OnDestroy {
     this.sub.add(
       combineLatest([
         this.quotes.quotes$,
-        (this.agreements as any).agreements$ ?? this.quotes.quotes$,
-        (this.setups as any).setups$ ?? this.quotes.quotes$,
-      ] as any).subscribe(() => this.hydrate()),
+        this.customers.customers$,
+        this.agreements.agreements$,
+        this.setups.setups$,
+      ]).subscribe(() => this.hydrate()),
     );
 
     this.hydrate();
@@ -126,6 +127,7 @@ export class ActivateAgreement implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.error = 'Fyll i avtalsnamn (minst 2 tecken).';
       return;
     }
 
@@ -139,33 +141,27 @@ export class ActivateAgreement implements OnInit, OnDestroy {
       return;
     }
 
-    // Om avtal inte finns än: skapa det nu
     if (!this.agreementId) {
       const created = this.agreements.createAgreement({
         customerId: this.customerId,
-        status: 'PENDING_SETUP',
+        status: 'ACTIVE',
         products: (this.quote as any)?.products ?? [],
         pdfUrl: (this.quote as any)?.pdfUrl,
       });
 
       this.agreementId = created.id;
+
       this.customers.setCurrentAgreement(this.customerId, created.id);
+      this.customers.updateStage(this.customerId, 'ACTIVE');
 
-      this.customers.updateStage(this.customerId, 'AGREEMENT_DRAFT');
-    }
-
-    // 1) sätt avtal ACTIVE
-    if (typeof (this.agreements as any).update === 'function') {
-      (this.agreements as any).update(this.agreementId, { status: 'ACTIVE' });
-    } else {
-      this.error = 'AgreementStoreService saknar update().';
+      this.router.navigate(['/customers', this.customerId]);
       return;
     }
 
-    // 2) stage (bakåtkomp)
+    this.agreements.update(this.agreementId, { status: 'ACTIVE' });
+
     this.customers.updateStage(this.customerId, 'ACTIVE');
 
-    // 3) tillbaka till kund
     this.router.navigate(['/customers', this.customerId]);
   }
 }
