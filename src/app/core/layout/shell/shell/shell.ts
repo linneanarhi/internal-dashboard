@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { SidebarComponent } from '../../sidebar/sidebar/sidebar';
+import { PortalSidebarComponent } from '../../sidebar/sidebar/sidebar';
 
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent],
+  imports: [RouterOutlet, PortalSidebarComponent],
   templateUrl: './shell.html',
 })
 export class ShellComponent {}

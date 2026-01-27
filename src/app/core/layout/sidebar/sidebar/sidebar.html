@@ -1,35 +1,77 @@
-<aside class="h-screen bg-card border-r border-line">
-  <!-- Brand -->
-  <div class="p-6">
-    <div class="flex items-center gap-3">
-      <div class="h-10 w-10 rounded-2xl bg-accent2 text-ink flex items-center justify-center font-extrabold shadow-soft">
-        P
-      </div>
-
-      <div class="min-w-0">
-        <div class="text-base font-semibold tracking-tight text-ink">Parlametric</div>
-        <div class="text-sm text-ink3">Internal Dashboard</div>
-      </div>
-    </div>
+<nav
+  class="portal-sidebar"
+  [class.expanded]="isExpanded"
+  (mouseenter)="isExpanded = true"
+  (mouseleave)="isExpanded = false"
+>
+  <div class="sidebar-header">
+    <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-small" />
+    <img src="assets/Logo/Logo2.png" alt="Logo" class="logo-full" />
   </div>
 
-  <!-- Nav -->
-  <nav class="px-3 space-y-1">
-    <a
-      *ngFor="let item of nav"
-      [routerLink]="item.path"
-      routerLinkActive="bg-surface text-ink shadow-soft"
-      class="flex items-center gap-3 rounded-2xl px-3 py-2 text-ink2 hover:bg-muted hover:text-ink transition"
-    >
-      <span class="text-lg">{{ item.icon }}</span>
-      <span class="text-sm font-semibold">{{ item.label }}</span>
-    </a>
-  </nav>
+  <hr class="sidebar-divider" />
 
-  <!-- Footer -->
-  <div class="mt-auto p-6">
-    <div class="text-xs text-ink3">
-      © {{ year }} Parlametric AB
+  <div class="user-panel" role="region" aria-label="User panel">
+    <div class="user-avatar" [attr.title]="userName">
+      <img
+        [src]="effectiveAvatarUrl"
+        alt="Avatar of {{ userName }}"
+        class="user-avatar-img"
+        loading="lazy"
+      />
+      <ng-template #avatarIcon>
+        <i class="bi bi-person-fill avatar-fallback-icon" aria-hidden="true"></i>
+      </ng-template>
+    </div>
+
+    <div class="user-info" [attr.aria-hidden]="!isExpanded">
+      <div class="user-name">{{ userName }}</div>
+      <div class="user-level">{{ userLevel }}</div>
     </div>
   </div>
-</aside>
+  <hr class="sidebar-divider" />
+  <ul class="menu">
+    @for (item of menuItems; track item) {
+      <li class="menu-item" [routerLink]="item.route" routerLinkActive="active">
+        <i class="bi {{ item.icon }}"></i>
+        <span class="label">{{ item.label }}</span>
+      </li>
+    }
+  </ul>
+
+  <hr class="sidebar-divider" />
+
+  <!-- Action buttons at the bottom -->
+  <ul class="menu-bottom">
+    <li class="menu-item" routerLink="/" routerLinkActive="active">
+      <i class="bi bi-gear-fill"></i>
+      <span class="label">Inställningar</span>
+    </li>
+
+    <li class="menu-item" routerLink="/about-us" routerLinkActive="active">
+      <i class="bi bi-people-fill"></i>
+      <span class="label">Om oss</span>
+    </li>
+    <li class="menu-item" (click)="exportChat()">
+      <i class="bi bi-download"></i>
+      <span class="label">Exportera chatt</span>
+    </li>
+    <li class="menu-item" (click)="openHelp()">
+      <i class="bi bi-question-circle-fill"></i>
+      <span class="label">Hjälp</span>
+    </li>
+
+    <li class="menu-item">
+      <i class="bi bi-translate"></i>
+      <span class="label">Språk</span>
+    </li>
+    <li class="menu-item" (click)="toggleTheme()">
+      <i class="bi" [class.bi-moon-stars-fill]="isDarkTheme" [class.bi-sun-fill]="!isDarkTheme"></i>
+      <span class="label">Byt tema</span>
+    </li>
+    <li class="logout-item" (click)="logout()">
+      <i class="bi bi-box-arrow-right"></i>
+      <span class="label">Logga ut</span>
+    </li>
+  </ul>
+</nav>

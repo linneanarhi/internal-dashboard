@@ -1,1 +1,105 @@
-<p>Kommer</p>
+<div class="space-y-6">
+  <header class="flex items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+      <button type="button" class="cursor-pointer" (click)="goBack()" aria-label="Tillbaka">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <button type="button" class="cursor-pointer" aria-label="Startsidan" (click)="goHome()">
+        <i class="bi bi-house-door"></i>
+      </button>
+
+      <div>
+        <h1 class="text-xl font-semibold text-ink">Teknisk uppsättning</h1>
+        <p class="mt-1 text-sm text-ink3" *ngIf="customerId">
+          Kund: <span class="font-semibold text-ink">{{ customerName || customerId }}</span>
+        </p>
+        <p class="mt-1 text-sm text-ink3" *ngIf="!customerId">
+          Öppna denna sida från en kund (så att customerId följer med).
+        </p>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button type="button" class="btn-secondary" (click)="save()" [disabled]="!customerId">
+        Spara
+      </button>
+      <button type="button" class="btn-accent" (click)="markComplete()" [disabled]="!customerId">
+        Markera som klar
+      </button>
+    </div>
+  </header>
+
+  <section class="card card-pad space-y-4">
+    <div>
+      <label class="label">Status</label>
+      <select class="input" [(ngModel)]="status" [disabled]="!customerId">
+        <option value="INCOMPLETE">INCOMPLETE</option>
+        <option value="COMPLETE">COMPLETE</option>
+      </select>
+      <p class="mt-1 text-xs text-ink3">När status blir COMPLETE kan avtalet aktiveras.</p>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2">
+      <div class="space-y-2">
+        <div class="text-sm font-semibold text-ink">API-key</div>
+
+        <div>
+          <label class="label">Namn</label>
+          <input class="input" [(ngModel)]="apiKeyName" [disabled]="!customerId" />
+        </div>
+
+        <div>
+          <label class="label">Maskad</label>
+          <input class="input" [(ngModel)]="apiKeyMasked" [disabled]="!customerId" />
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="text-sm font-semibold text-ink">Datakälla</div>
+
+        <div>
+          <label class="label">Namn</label>
+          <input class="input" [(ngModel)]="dataSourceName" [disabled]="!customerId" />
+        </div>
+
+        <div>
+          <label class="label">Status</label>
+          <select class="input" [(ngModel)]="dataSourceStatus" [disabled]="!customerId">
+            <option value="DISCONNECTED">DISCONNECTED</option>
+            <option value="CONNECTED">CONNECTED</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ✅ Efter "Markera som klar" - fråga vart man vill gå -->
+<div
+  *ngIf="showAfterCompleteModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+  (click)="closeModal()"
+>
+  <div
+    class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="text-base font-semibold text-ink">Teknisk uppsättning är klar</div>
+    <div class="mt-1 text-sm text-ink3">
+      Vill du gå till <span class="font-semibold text-ink">Aktivera avtal</span> eller tillbaka till
+      kundbilden?
+    </div>
+
+    <div class="mt-4 flex flex-wrap gap-2 justify-end">
+      <button type="button" class="btn-secondary" (click)="goToCustomer()">Till kundbilden</button>
+
+      <button type="button" class="btn-accent" (click)="goToActivateAgreement()">
+        Till aktivera avtal
+      </button>
+    </div>
+
+    <button type="button" class="mt-3 text-xs text-ink3 hover:underline" (click)="closeModal()">
+      Stäng
+    </button>
+  </div>
+</div>

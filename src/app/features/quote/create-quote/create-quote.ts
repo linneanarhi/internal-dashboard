@@ -5,6 +5,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { CustomerStoreService } from '../../../Services/customer-store.service';
 import { QuoteStoreService } from '../../../Services/quote-store.service';
+import { AgreementStoreService } from '../../../Services/agreement-store.service';
+import { SetupStoreService } from '../../../Services/setup-store.service';
+
 import { Quote } from '../../../data/quotes.data';
 import { Product } from '../../../data/customers.data';
 
@@ -19,6 +22,8 @@ export class QuoteNewComponent implements OnInit {
     private fb: FormBuilder,
     private customers: CustomerStoreService,
     private quotes: QuoteStoreService,
+    private agreements: AgreementStoreService,
+    private setups: SetupStoreService,
     private location: Location,
     private router: Router,
     private route: ActivatedRoute,
@@ -46,17 +51,17 @@ export class QuoteNewComponent implements OnInit {
     { key: 'cases' as Product, label: 'Ärenden' },
   ];
 
-  // Viktigt: initieras i ngOnInit (för att undvika "use before init")
   quoteId = '';
-
-  // Initieras i ngOnInit
   form!: FormGroup;
 
+  // ✅ för “på riktigt”: öppna /quote/new?customerId=...
+  prefillCustomerId = '';
+
   ngOnInit(): void {
-    // 1) sätt quoteId från route eller skapa nytt
+    // 1) quoteId från route eller nytt
     this.quoteId = this.route.snapshot.paramMap.get('id') ?? this.makeId();
 
-    // 2) bygg form (nu är fb initierad)
+    // 2) build form
     this.form = this.fb.group({
       customer: this.fb.group({
         customerName: ['', [Validators.required, Validators.minLength(2)]],
@@ -99,9 +104,25 @@ export class QuoteNewComponent implements OnInit {
     if (existing) {
       this.patchFromQuote(existing);
 
-      // Proffsigt: lås om godkänd
       if (existing.status === 'APPROVED') {
         this.form.disable();
+      }
+      return; // edit-läge vinner över prefill
+    }
+
+    // 4) ✅ create-läge: prefill via query param customerId
+    this.prefillCustomerId = this.route.snapshot.queryParamMap.get('customerId') ?? '';
+    if (this.prefillCustomerId) {
+      const c = this.customers.getById(this.prefillCustomerId);
+      if (c) {
+        this.form.patchValue({
+          customer: {
+            customerName: c.name ?? '',
+            companyId: c.companyId ?? null,
+            contactEmail: c.email ?? '',
+          },
+          products: c.products ?? [],
+        });
       }
     }
   }
@@ -140,7 +161,9 @@ export class QuoteNewComponent implements OnInit {
     const quote = this.buildQuote('DRAFT');
     this.persistQuoteAndCustomer(quote);
 
-    this.router.navigate(['/customers', quote.customerId]);
+    if (quote.customerId) {
+      this.router.navigate(['/customers', quote.customerId]);
+    }
   }
 
   /** Markera som SKICKAD */
@@ -152,8 +175,6 @@ export class QuoteNewComponent implements OnInit {
 
     const quote = this.buildQuote('SENT');
     this.persistQuoteAndCustomer(quote);
-
-    // Här kan du lägga toast i framtiden.
   }
 
   /** GODKÄNN: lås offert och gå till avtal */
@@ -174,7 +195,6 @@ export class QuoteNewComponent implements OnInit {
     const quote = this.buildQuote('APPROVED');
     this.persistQuoteAndCustomer(quote);
 
-    // Proffsigt: lås efter godkänd
     this.form.disable();
 
     this.router.navigate(['/agreements/activate'], {
@@ -191,37 +211,110 @@ export class QuoteNewComponent implements OnInit {
     window.print();
   }
 
+  /**
+   * ✅ “På riktigt”:
+   * - Om vi öppnade med customerId: använd den kunden (uppdatera ev fält)
+   * - Annars: addOrGetCustomerFromQuote (skapa om saknas)
+   * - Sätt currentQuoteId på kunden
+   * - Vid APPROVED: skapa avtal + setup-stub och sätt currentAgreementId
+   */
   private persistQuoteAndCustomer(quote: Quote): void {
     const createdAt = this.parseYmd(quote.customerStartDate) ?? new Date();
 
-    const customer = this.customers.addOrGetCustomerFromQuote({
-      name: quote.customerName,
-      email: quote.contactEmail || '',
-      companyId: quote.companyId ?? 0,
-      products: quote.products,
-      createdAt,
-    });
+    const companyId = quote.companyId ?? 0;
+    if (!companyId || companyId < 1) {
+      this.form.get('customer.companyId')?.setErrors({ required: true });
+      this.form.get('customer.companyId')?.markAsTouched();
+      return;
+    }
 
+    // 1) Hämta/Skapa kund
+    const prefill = this.prefillCustomerId
+      ? this.customers.getById(this.prefillCustomerId)
+      : undefined;
+
+    const customer = prefill
+      ? (() => {
+          // uppdatera kund med det som står i offerten (om man ändrat namn/email/products)
+          this.customers.updateCustomer(prefill.id, {
+            name: quote.customerName,
+            email: quote.contactEmail || prefill.email,
+            products: quote.products?.length ? quote.products : prefill.products,
+          });
+          return this.customers.getById(prefill.id)!;
+        })()
+      : this.customers.addOrGetCustomerFromQuote({
+          name: quote.customerName,
+          email: quote.contactEmail || '',
+          companyId,
+          products: quote.products,
+          createdAt,
+        });
+
+    // 2) Sätt customerId och spara quote
     quote.customerId = customer.id;
     this.quotes.upsert(quote);
 
+    // 3) Koppla kunden -> currentQuoteId (viktigt för flow-resolver)
+    this.customers.updateCustomer(customer.id, {
+      currentQuoteId: quote.id,
+    });
+
+    // 4) Spara metrics på kundprofil
     this.customers.updateCustomerQuoteMetrics(customer.id, quote.monthsLeft, quote.valueLeft);
 
+    // 5) (tillfällig stage tills du är 100% flow)
     if (quote.status === 'DRAFT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
     if (quote.status === 'SENT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
     if (quote.status === 'APPROVED') this.customers.updateStage(customer.id, 'QUOTE_APPROVED');
     if (quote.status === 'CONVERTED') this.customers.updateStage(customer.id, 'ACTIVE');
+
+    // 6) ✅ Vid APPROVED: skapa agreement + setup-stub (om saknas)
+    if (quote.status === 'APPROVED') {
+      const latestCustomer = this.customers.getById(customer.id);
+      const currentAgreementId = (latestCustomer as any)?.currentAgreementId as string | undefined;
+
+      // A) skapa avtal om det inte redan finns
+      if (!currentAgreementId && typeof (this.agreements as any).createAgreement === 'function') {
+        const agreement = (this.agreements as any).createAgreement({
+          customerId: customer.id,
+          products: quote.products,
+          status: 'PENDING_SETUP',
+          pdfUrl: '/mock/agreement.pdf',
+        });
+
+        this.customers.updateCustomer(customer.id, {
+          currentAgreementId: agreement.id,
+          currentQuoteId: quote.id,
+        });
+      }
+
+      // B) setup-stub om saknas
+      const existingSetup = this.setups.getByCustomer(customer.id);
+      if (!existingSetup) {
+        this.setups.upsert({
+          customerId: customer.id,
+          status: 'INCOMPLETE',
+          apiKeys: [{ name: 'Primary API key', masked: '••••••••••1234' }],
+          dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
+        });
+      }
+    }
   }
 
+  /**
+   * Build quote utifrån form.
+   * customerId fylls “på riktigt” i persistQuoteAndCustomer().
+   */
   private buildQuote(status: Quote['status']): Quote {
     const existing = this.quotes.getById(this.quoteId);
+
     const createdAtIso = existing?.createdAtIso ?? new Date().toISOString();
     const updatedAtIso = new Date().toISOString();
     const approvedAtIso =
-  status === 'APPROVED'
-    ? (existing?.approvedAtIso ?? new Date().toISOString())
-    : existing?.approvedAtIso;
-
+      status === 'APPROVED'
+        ? (existing?.approvedAtIso ?? new Date().toISOString())
+        : existing?.approvedAtIso;
 
     const c = this.form.value.customer!;
     const a = this.form.value.agreement!;
@@ -237,7 +330,7 @@ export class QuoteNewComponent implements OnInit {
       id: this.quoteId,
       status,
 
-      customerId: existing?.customerId,
+      customerId: existing?.customerId ?? '',
 
       customerName: String(c.customerName || '').trim(),
       companyId: c.companyId ?? null,
@@ -278,6 +371,7 @@ export class QuoteNewComponent implements OnInit {
       createdAtIso,
       updatedAtIso,
       approvedAtIso,
+      convertedAtIso: existing?.convertedAtIso,
     };
   }
 
@@ -343,5 +437,9 @@ export class QuoteNewComponent implements OnInit {
       },
       products: q.products,
     });
+  }
+
+  goHome() {
+    this.router.navigate(['/customers']);
   }
 }

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import {  Router } from '@angular/router';
 
 @Component({
   selector: 'app-add-product',
@@ -7,5 +8,13 @@ import { Component } from '@angular/core';
   styleUrl: './add-product.css',
 })
 export class AddProduct {
+
+constructor(private router: Router) {}
+
+goHome() {
+  this.router.navigate(['/customers']);
+}
+
+
 
 }

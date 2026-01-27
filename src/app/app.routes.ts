@@ -48,7 +48,7 @@ export const routes: Routes = [
         path: 'technical-setup',
         loadComponent: () =>
           import('./features/technical/technical-setup/technical-setup').then(
-            (m) => m.TechnicalSetup,
+            (m) => m.TechnicalSetupComponent,
           ),
       },
 

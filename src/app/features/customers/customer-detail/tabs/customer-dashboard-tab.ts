@@ -23,7 +23,8 @@ export class CustomerDashboardTabComponent {
   @Input() canApproveQuote = false;
   @Input() canActivateAgreement = false;
 
-  @Input({ required: true }) statusLabel!: 'Klar' | 'Åtgärd';
+  @Input({ required: true }) statusLabel!: string;
+
   @Input({ required: true }) nextAction!: string;
   @Input() isActive = false;
 

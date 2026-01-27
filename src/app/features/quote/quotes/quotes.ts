@@ -1,8 +1,11 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
+import { AgreementStoreService } from '../../../Services/agreement-store.service';
+import { CustomerStoreService } from '../../../Services/customer-store.service';
+import { SetupStoreService } from '../../../Services/setup-store.service';
 import { QuoteStoreService } from '../../../Services/quote-store.service';
 import { Quote } from '../../../data/quotes.data';
 
@@ -11,11 +14,18 @@ type SortKey = 'updatedAt' | 'createdAt' | 'customerName' | 'status' | 'valueLef
 @Component({
   selector: 'app-quotes',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule ],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './quotes.html',
 })
 export class QuotesComponent {
-  constructor(public quoteStore: QuoteStoreService, private location: Location,) {}
+  constructor(
+    public quoteStore: QuoteStoreService,
+    private location: Location,
+    private router: Router,
+    private agreements: AgreementStoreService,
+    private customers: CustomerStoreService,
+    private setups: SetupStoreService,
+  ) {}
 
   // UI state
   query = '';
@@ -23,12 +33,26 @@ export class QuotesComponent {
   sortKey: SortKey = 'updatedAt';
   sortDir: 'asc' | 'desc' = 'desc';
 
-
-
-    goBack(): void {
+  goBack(): void {
     this.location.back();
   }
-  // ========= Derived (körs i template) =========
+
+  goHome(): void {
+    this.router.navigate(['/customers']);
+  }
+
+  // ========= Lock rule =========
+
+  isLocked(q: Quote): boolean {
+    return q.status === 'APPROVED' || q.status === 'CONVERTED';
+  }
+
+  goToCustomer(q: Quote): void {
+    if (!q.customerId) return;
+    this.router.navigate(['/customers', q.customerId]);
+  }
+
+  // ========= Derived =========
 
   get filteredQuotes(): Quote[] {
     const q = this.query.trim().toLowerCase();
@@ -53,12 +77,63 @@ export class QuotesComponent {
 
   // ========= Actions =========
 
-  setStatus(quote: Quote, status: Quote['status']): void {
-    // PROFFSIGT: Godkänd ska inte kunna backas av misstag i listan
-    // (Du kan ändra regeln om ni vill)
-    if (quote.status === 'APPROVED') return;
+  setStatus(q: Quote, status: 'DRAFT' | 'SENT' | 'APPROVED'): void {
+    // 🔒 Blockera alla ändringar på låsta offerter
+    if (this.isLocked(q)) return;
 
-    this.quoteStore.updateStatus(quote.id, status);
+    // Blockera “godkänn” om redan approved (extra skydd)
+    if (status === 'APPROVED' && q.status === 'APPROVED') return;
+
+    // 1) uppdatera quote
+    this.quoteStore.updateStatus(q.id, status);
+
+    // 2) bara vid APPROVED ska vi skapa nästa steg
+    if (status !== 'APPROVED') return;
+
+    const customerId = q.customerId;
+    if (!customerId) return;
+
+    // 3) skapa avtal om kunden inte redan har ett kopplat
+    const customer = this.customers.getById(customerId);
+
+    // Koppla alltid currentQuoteId till senaste offerten
+    this.customers.updateCustomer(customerId, { currentQuoteId: q.id });
+
+    // Om kunden redan har currentAgreementId – skapa inte ett nytt
+    if (customer?.currentAgreementId) {
+      // Se till att setup finns
+      if (!this.setups.getByCustomer(customerId)) {
+        this.setups.upsert({
+          customerId,
+          status: 'INCOMPLETE',
+          apiKeys: [{ name: 'Primary API key', masked: '••••••••••1234' }],
+          dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
+        });
+      }
+      return;
+    }
+
+    const agreement = this.agreements.createAgreement({
+      customerId,
+      products: (q as any).products ?? [],
+      status: 'PENDING_SETUP',
+      pdfUrl: '/mock/agreement.pdf',
+    });
+
+    // 4) koppla kunden till aktuell agreement
+    this.customers.updateCustomer(customerId, {
+      currentAgreementId: agreement.id,
+    });
+
+    // 5) setup-stub om saknas
+    if (!this.setups.getByCustomer(customerId)) {
+      this.setups.upsert({
+        customerId,
+        status: 'INCOMPLETE',
+        apiKeys: [{ name: 'Primary API key', masked: '••••••••••1234' }],
+        dataSources: [{ name: 'Telefoni', status: 'DISCONNECTED' }],
+      });
+    }
   }
 
   // ========= Helpers =========
@@ -131,8 +206,11 @@ export class QuotesComponent {
     if (!iso) return '—';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '—';
-    // Svenskt format
-    return d.toLocaleDateString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return d.toLocaleDateString('sv-SE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
   }
 
   toggleSort(key: SortKey): void {

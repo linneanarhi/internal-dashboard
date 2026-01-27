@@ -15,7 +15,8 @@ export class CustomerAgreementsTabComponent {
   @Input() canApproveQuote = false;
   @Input() canActivateAgreement = false;
 
-  @Input({ required: true }) statusLabel!: 'Klar' | 'Åtgärd';
+  @Input({ required: true }) statusLabel!: string;
+
   @Input({ required: true }) nextAction!: string;
 
   @Output() approveQuote = new EventEmitter<void>();

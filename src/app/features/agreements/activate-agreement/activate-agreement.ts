@@ -1,12 +1,15 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subscription, combineLatest } from 'rxjs';
 
 import { QuoteStoreService } from '../../../Services/quote-store.service';
 import { CustomerStoreService } from '../../../Services/customer-store.service';
+import { AgreementStoreService } from '../../../Services/agreement-store.service';
+import { SetupStoreService } from '../../../Services/setup-store.service';
+
 import { Quote } from '../../../data/quotes.data';
-import { Product } from '../../../data/customers.data';
 
 @Component({
   selector: 'app-activate-agreement',
@@ -14,15 +17,7 @@ import { Product } from '../../../data/customers.data';
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './activate-agreement.html',
 })
-export class ActivateAgreement implements OnInit {
-  quoteId = '';
-  quote: Quote | null = null;
-  error: string | null = null;
-
-  // ✅ Viktigt: INTE this.fb.group här uppe
-  // Vi deklarerar bara och initierar i constructor
-  form!: ReturnType<FormBuilder['group']>;
-
+export class ActivateAgreement implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -30,82 +25,87 @@ export class ActivateAgreement implements OnInit {
     private location: Location,
     private quotes: QuoteStoreService,
     private customers: CustomerStoreService,
-  ) {
-    // ✅ Nu är fb initierad, så här får du skapa form
-    this.form = this.fb.group({
-      // Kund (read-only)
-      customerName: [{ value: '', disabled: true }],
-      companyId: [{ value: null as number | null, disabled: true }],
+    private agreements: AgreementStoreService,
+    private setups: SetupStoreService,
+  ) {}
 
-      // Kontakt (kan ändras)
-      contactName: [''],
-      contactEmail: [''],
-      contactPhone: [''],
+  private sub = new Subscription();
 
-      // Avtal
-      agreementStart: ['', Validators.required],
-      agreementEnd: ['', Validators.required],
-      billingFrequency: [''],
-      monthlyValue: [0, [Validators.min(0)]],
+  quoteId = '';
+  quote: Quote | undefined;
 
-      // Produkter (visning / read-only)
-      products: this.fb.control<Product[]>([]),
+  customerId = '';
+  agreementId = '';
 
-      // Intern notering (framtid)
-      internalNote: [''],
-    });
-  }
+  setupStatus: 'INCOMPLETE' | 'COMPLETE' | 'UNKNOWN' = 'UNKNOWN';
+  canActivate = false;
+
+  error: string | null = null;
+
+  form!: FormGroup;
 
   ngOnInit(): void {
-    this.quoteId = this.route.snapshot.queryParamMap.get('quoteId') ?? '';
+    this.form = this.fb.group({
+      agreementName: ['', [Validators.required, Validators.minLength(2)]],
+      note: [''],
+    });
 
+    this.quoteId = this.route.snapshot.queryParamMap.get('quoteId') ?? '';
     if (!this.quoteId) {
-      this.error = 'Ingen quoteId hittades i URL:en.';
+      this.error = 'Saknar quoteId i URL.';
       return;
     }
+
+    this.sub.add(
+      combineLatest([
+        this.quotes.quotes$,
+        this.customers.customers$,
+        this.agreements.agreements$,
+        this.setups.setups$,
+      ]).subscribe(() => this.hydrate()),
+    );
+
+    this.hydrate();
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
+
+  private hydrate(): void {
+    this.error = null;
 
     const q = this.quotes.getById(this.quoteId);
     if (!q) {
-      this.error = 'Offerten hittades inte. Är den sparad?';
-      return;
-    }
-
-    // måste vara godkänd innan aktivering
-    if (q.status !== 'APPROVED' && q.status !== 'CONVERTED') {
-      this.error = 'Offerten måste vara GODKÄND innan du kan aktivera avtal.';
+      this.quote = undefined;
+      this.canActivate = false;
+      this.error = 'Offerten hittades inte.';
       return;
     }
 
     this.quote = q;
 
-    // Proffsigt: när man är i avtalssteget men inte aktiverat ännu
-    if (q.customerId && q.status === 'APPROVED') {
-      this.customers.updateStage(q.customerId, 'AGREEMENT_DRAFT');
+    if (!q.customerId) {
+      this.canActivate = false;
+      this.error = 'Offerten saknar customerId.';
+      return;
     }
 
-    this.form.patchValue({
-      customerName: q.customerName,
-      companyId: q.companyId ?? null,
+    this.customerId = q.customerId;
 
-      contactName: q.contactName,
-      contactEmail: q.contactEmail,
-      contactPhone: q.contactPhone,
+    const customer = this.customers.getById(this.customerId);
+    this.agreementId = (customer as any)?.currentAgreementId ?? '';
 
-      agreementStart: q.currentAgreementStart || q.customerStartDate,
-      agreementEnd: q.currentAgreementEnd,
-      billingFrequency: q.billingFrequency,
-      monthlyValue: q.monthlyValue,
+    const setup = this.setups.getByCustomer(this.customerId);
+    this.setupStatus = setup?.status ?? 'UNKNOWN';
 
-      products: q.products,
-    });
+    this.canActivate = this.quote.status === 'APPROVED' && this.setupStatus === 'COMPLETE';
 
-    // säkerställ att read-only verkligen är read-only
-    this.form.controls['customerName']?.disable();
-    this.form.controls['companyId']?.disable();
-
-    // om redan konverterad kan du låsa hela vyn
-    if (q.status === 'CONVERTED') {
-      this.form.disable();
+    const currentName = this.form.get('agreementName')?.value;
+    if (!currentName) {
+      this.form.patchValue({
+        agreementName: `Avtal – ${this.quote.customerName}`,
+      });
     }
   }
 
@@ -113,67 +113,55 @@ export class ActivateAgreement implements OnInit {
     this.location.back();
   }
 
-  get monthsLeft(): number {
-    const end = (this.form.value as any).agreementEnd || '';
-    return this.calcMonthsLeft(end);
-  }
-
-  get valueLeft(): number {
-    const mv = Number((this.form.value as any).monthlyValue || 0);
-    return Math.max(0, this.monthsLeft * mv);
+  goToTechnicalSetup(): void {
+    if (!this.customerId) return;
+    this.router.navigate(['/technical-setup'], {
+      queryParams: { customerId: this.customerId, quoteId: this.quoteId },
+    });
   }
 
   activate(): void {
-    if (!this.quote) return;
+    this.error = null;
+
+    if (!this.quote || !this.customerId) return;
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.error = 'Fyll i avtalsnamn (minst 2 tecken).';
       return;
     }
 
-    // 1) uppdatera months/value på kundprofil
-    if (this.quote.customerId) {
-      this.customers.updateCustomerQuoteMetrics(
-        this.quote.customerId,
-        this.monthsLeft,
-        this.valueLeft,
-      );
-      this.customers.updateStage(this.quote.customerId, 'ACTIVE');
+    if (this.quote.status !== 'APPROVED') {
+      this.error = 'Offerten måste vara godkänd innan aktivering.';
+      return;
     }
 
-    // 3) markera offerten som konverterad
-    this.quotes.convert(this.quote.id);
-
-    // 4) navigera till kunden
-    if (this.quote.customerId) {
-      this.router.navigate(['/customers', this.quote.customerId]);
-    } else {
-      this.router.navigate(['/quotes']);
+    if (this.setupStatus !== 'COMPLETE') {
+      this.error = 'Teknisk uppsättning är inte klar. Slutför setup innan aktivering.';
+      return;
     }
-  }
 
-  private calcMonthsLeft(endYmd: string): number {
-    const end = this.parseYmd(endYmd);
-    if (!end) return 0;
+    if (!this.agreementId) {
+      const created = this.agreements.createAgreement({
+        customerId: this.customerId,
+        status: 'ACTIVE',
+        products: (this.quote as any)?.products ?? [],
+        pdfUrl: (this.quote as any)?.pdfUrl,
+      });
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      this.agreementId = created.id;
 
-    if (endDate <= today) return 0;
+      this.customers.setCurrentAgreement(this.customerId, created.id);
+      this.customers.updateStage(this.customerId, 'ACTIVE');
 
-    const months =
-      (endDate.getFullYear() - today.getFullYear()) * 12 +
-      (endDate.getMonth() - today.getMonth());
+      this.router.navigate(['/customers', this.customerId]);
+      return;
+    }
 
-    const bump = endDate.getDate() >= today.getDate() ? 1 : 0;
-    return Math.max(0, months + bump);
-  }
+    this.agreements.update(this.agreementId, { status: 'ACTIVE' });
 
-  private parseYmd(ymd: string): Date | null {
-    if (!ymd) return null;
-    const [y, m, d] = ymd.split('-').map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
+    this.customers.updateStage(this.customerId, 'ACTIVE');
+
+    this.router.navigate(['/customers', this.customerId]);
   }
 }

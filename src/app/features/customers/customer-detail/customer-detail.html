@@ -7,20 +7,41 @@
       <button type="button" class="cursor-pointer" (click)="goBack()" aria-label="Tillbaka">
         <i class="bi bi-arrow-left"></i>
       </button>
+      <button type="button" class="cursor-pointer" aria-label="Startsidan" (click)="goHome()">
+        <i class="bi bi-house-door"></i>
+      </button>
 
       <div>
         <div class="flex items-center gap-2">
           <h1 class="text-sm font-semibold text-ink3">Kunddetaljer</h1>
         </div>
-        <span class="text-xl font-bold tracking-tight text-ink">{{ customer?.name ?? 'Okänd kund' }}</span>
+        <span class="text-xl font-bold tracking-tight text-ink">{{
+          customer?.name ?? 'Okänd kund'
+        }}</span>
       </div>
     </div>
 
     <!-- Primary actions -->
     <div class="flex flex-wrap gap-2">
       <ng-container *ngIf="customer">
-        <button *ngIf="canApproveQuote" type="button" class="btn-accent" (click)="approveQuote()">
-          Godkänn offert
+        <button
+          *ngIf="customer && !currentQuote"
+          type="button"
+          class="btn-accent"
+          (click)="goToCreateQuote()"
+        >
+          Skapa offert
+        </button>
+
+        <button
+          *ngIf="
+            currentQuote && (currentQuote.status === 'DRAFT' || currentQuote.status === 'SENT')
+          "
+          type="button"
+          class="btn-secondary"
+          (click)="editQuote()"
+        >
+          Redigera offert
         </button>
 
         <button
@@ -34,7 +55,9 @@
       </ng-container>
 
       <a [routerLink]="['/customers', id, 'add-product']" class="btn-accent">Lägg till produkt</a>
-      <a routerLink="/technical-setup" class="btn-secondary">Teknisk uppsättning</a>
+      <button type="button" class="btn-secondary" (click)="goToTechnicalSetup()">
+        Teknisk uppsättning
+      </button>
     </div>
   </header>
 
@@ -73,9 +96,9 @@
         (addProduct)="goToAddProduct()"
         (goTechnicalSetup)="goToTechnicalSetup()"
         (openService)="openService()"
-        [statusLabel]="statusLabel(c.stage)"
-        [nextAction]="nextActionLabel(c.stage)"
-        [isActive]="isActive(c.stage)"
+        [statusLabel]="statusLabel"
+        [nextAction]="nextAction"
+        [isActive]="isActive"
       />
 
       <!-- Avtal & offerter -->
@@ -84,8 +107,8 @@
         [customer]="c"
         [canApproveQuote]="canApproveQuote"
         [canActivateAgreement]="canActivateAgreement"
-        [statusLabel]="statusLabel(c.stage)"
-        [nextAction]="nextActionLabel(c.stage)"
+        [statusLabel]="statusLabel"
+        [nextAction]="nextAction"
         (approveQuote)="approveQuote()"
         (activateAgreement)="goToActivateAgreement()"
       />
@@ -98,16 +121,10 @@
       />
 
       <!-- Aktiva användare -->
-      <app-customer-users-tab
-        *ngIf="activeTab === 'users'"
-        [customer]="c"
-      />
+      <app-customer-users-tab *ngIf="activeTab === 'users'" [customer]="c" />
 
       <!-- Om kunden -->
-      <app-customer-about-tab
-        *ngIf="activeTab === 'about'"
-        [customer]="c"
-      />
+      <app-customer-about-tab *ngIf="activeTab === 'about'" [customer]="c" />
     </div>
   </section>
 </div>

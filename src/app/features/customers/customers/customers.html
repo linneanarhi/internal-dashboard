@@ -18,28 +18,24 @@
     KPI cards (desktop only)
   ======================================================== -->
   <section class="hidden lg:grid lg:grid-cols-4 gap-4" aria-label="Sammanfattning">
-    <!-- Totalt kunder -->
     <div class="card card-pad">
       <div class="text-sm text-ink3">Totalt kunder</div>
       <div class="mt-2 text-2xl font-semibold text-ink">{{ totalCustomers }}</div>
       <div class="mt-2 text-xs text-ink3">Alla aktiva kunder</div>
     </div>
 
-    <!-- Totalt användare -->
     <div class="card card-pad">
       <div class="text-sm text-ink3">Totalt användare</div>
       <div class="mt-2 text-2xl font-semibold text-ink">{{ totalUsers }}</div>
       <div class="mt-2 text-xs text-ink3">Alla användare</div>
     </div>
 
-    <!-- Kunder med samtal -->
     <div class="card card-pad">
       <div class="text-sm text-ink3">Har samtal</div>
       <div class="mt-2 text-2xl font-semibold text-ink">{{ countCalls }}</div>
       <div class="mt-2 text-xs text-ink3">Kunder med samtal</div>
     </div>
 
-    <!-- Kunder med mejl -->
     <div class="card card-pad">
       <div class="text-sm text-ink3">Har mejl</div>
       <div class="mt-2 text-2xl font-semibold text-ink">{{ countEmail }}</div>
@@ -52,7 +48,6 @@
   ======================================================== -->
   <section aria-label="Filter och genvägar">
     <div class="grid gap-3 md:grid-cols-3 items-end">
-      <!-- Search -->
       <div>
         <label class="label" for="customerSearch">Sök</label>
         <input
@@ -64,13 +59,9 @@
         />
       </div>
 
-      <!-- Quotes shortcut -->
       <div>
         <label class="label opacity-0" aria-hidden="true">.</label>
-        <a
-          routerLink="/quotes"
-          class="btn-secondary h-9.5 w-30 flex items-center justify-center"
-        >
+        <a routerLink="/quotes" class="btn-secondary h-9.5 w-30 flex items-center justify-center">
           Offerter
         </a>
       </div>
@@ -91,48 +82,32 @@
         </thead>
 
         <tbody class="divide-y divide-line2">
-          <tr
-            *ngFor="let c of filteredCustomers"
-            class="row cursor-pointer"
-            (click)="openCustomer(c.id)"
-          >
-            <!-- Customer cell -->
+          <tr *ngFor="let c of filteredCustomers" class="row cursor-pointer" (click)="openCustomer(c.id)">
             <td class="td">
               <div class="font-semibold text-ink">{{ c.name }}</div>
 
-              <!-- Products -->
               <div class="text-xs text-ink3 p-1.5">
                 <span *ngFor="let p of c.products" class="pill">
                   {{ labelForProduct(p) }}
                 </span>
               </div>
 
-              <!-- Status + next action -->
               <div class="mt-2 flex flex-col gap-1">
                 <span
                   class="inline-flex w-fit items-center rounded-full px-2 py-1 text-xs font-medium"
-                  [ngClass]="
-                    statusLabel(c.stage) === 'Klar'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-800'
-                  "
+                  [ngClass]="flow(c).isActive ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
                 >
-                  {{ statusLabel(c.stage) }}
+                  {{ flow(c).isActive ? 'Klar' : 'Åtgärd' }}
                 </span>
 
                 <span class="text-xs text-ink3">
-                  {{ nextActionLabel(c.stage) }}
+                  {{ flow(c).nextAction }}
                 </span>
               </div>
             </td>
 
-            <!-- Action cell -->
             <td class="td">
-              <button
-                type="button"
-                class="btn-accent"
-                (click)="$event.stopPropagation(); openCustomer(c.id)"
-              >
+              <button type="button" class="btn-accent" (click)="$event.stopPropagation(); openCustomer(c.id)">
                 Visa
               </button>
             </td>
@@ -154,7 +129,6 @@
               <th class="th text-left rounded-tl-xl">Kund</th>
               <th class="th text-left">ID</th>
 
-              <!-- Products filter dropdown trigger -->
               <th class="th text-left">
                 <button
                   #productsBtn
@@ -176,7 +150,6 @@
 
               <th class="th text-left">Användare</th>
 
-              <!-- Sort: createdAt -->
               <th class="th text-left">
                 <button
                   type="button"
@@ -185,14 +158,8 @@
                 >
                   Startdatum
                   <span class="text-ink" aria-hidden="true">
-                    <i
-                      *ngIf="sortBy === 'createdAt' && sortDir === 'asc'"
-                      class="bi bi-caret-up-fill"
-                    ></i>
-                    <i
-                      *ngIf="sortBy === 'createdAt' && sortDir === 'desc'"
-                      class="bi bi-caret-down-fill"
-                    ></i>
+                    <i *ngIf="sortBy === 'createdAt' && sortDir === 'asc'" class="bi bi-caret-up-fill"></i>
+                    <i *ngIf="sortBy === 'createdAt' && sortDir === 'desc'" class="bi bi-caret-down-fill"></i>
                   </span>
                 </button>
               </th>
@@ -209,16 +176,13 @@
               class="row cursor-pointer hover:[&>td]:bg-line2"
               (click)="openCustomer(c.id)"
             >
-              <!-- Customer -->
               <td class="td bg-white" [class.rounded-bl-xl]="isLast">
                 <div class="font-semibold text-ink">{{ c.name }}</div>
                 <div class="text-xs text-ink3">{{ c.email }}</div>
               </td>
 
-              <!-- Company ID -->
               <td class="td bg-white text-ink2">{{ c.companyId }}</td>
 
-              <!-- Products -->
               <td class="td bg-white">
                 <div class="flex flex-wrap gap-1">
                   <span *ngFor="let p of c.products" class="pill">
@@ -227,51 +191,38 @@
                 </div>
               </td>
 
-              <!-- Users -->
               <td class="td bg-white text-ink3">{{ c.usersCount }}</td>
 
-              <!-- Created -->
               <td class="td bg-white text-ink3">{{ formatDateISO(c.createdAt) }}</td>
 
-              <!-- Status -->
               <td class="td bg-white">
                 <span
                   class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                  [ngClass]="
-                    statusLabel(c.stage) === 'Klar'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-800'
-                  "
+                  [ngClass]="flow(c).isActive ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'"
                 >
-                  {{ statusLabel(c.stage) }}
+                  {{ flow(c).isActive ? 'Klar' : 'Åtgärd' }}
                 </span>
               </td>
 
-              <!-- Next action -->
               <td class="td bg-white">
                 <span class="text-xs text-ink3">
                   <button
-                    *ngIf="c.stage === 'QUOTE_APPROVED' || c.stage === 'AGREEMENT_DRAFT'"
+                    *ngIf="flow(c).canActivateAgreement"
                     type="button"
                     class="hover:underline text-left"
-                    (click)="$event.stopPropagation(); goToActivateAgreement(c.id)"
+                    (click)="$event.stopPropagation(); goToActivateAgreement(c)"
                   >
-                    {{ nextActionLabel(c.stage) }}
+                    {{ flow(c).nextAction }}
                   </button>
 
-                  <span *ngIf="!(c.stage === 'QUOTE_APPROVED' || c.stage === 'AGREEMENT_DRAFT')">
-                    {{ nextActionLabel(c.stage) }}
+                  <span *ngIf="!flow(c).canActivateAgreement">
+                    {{ flow(c).nextAction }}
                   </span>
                 </span>
               </td>
 
-              <!-- Row action -->
               <td class="td bg-white" [class.rounded-br-xl]="isLast">
-                <button
-                  type="button"
-                  class="btn-accent bi bi-eye gap-2"
-                  (click)="$event.stopPropagation(); openCustomer(c.id)"
-                >
+                <button type="button" class="btn-accent bi bi-eye gap-2" (click)="$event.stopPropagation(); openCustomer(c.id)">
                   Visa
                 </button>
               </td>
@@ -280,9 +231,7 @@
         </table>
       </div>
 
-      <!-- =====================================================
-        Products dropdown menu
-      ====================================================== -->
+      <!-- Products dropdown -->
       <div
         *ngIf="productsOpen"
         class="absolute z-50 mt-2 w-56 rounded-md border border-line bg-white shadow-lg"
