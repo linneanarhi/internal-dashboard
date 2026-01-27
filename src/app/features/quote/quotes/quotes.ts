@@ -37,11 +37,22 @@ export class QuotesComponent {
     this.location.back();
   }
 
-  goHome() {
+  goHome(): void {
     this.router.navigate(['/customers']);
   }
 
-  // ========= Derived (körs i template) =========
+  // ========= Lock rule =========
+
+  isLocked(q: Quote): boolean {
+    return q.status === 'APPROVED' || q.status === 'CONVERTED';
+  }
+
+  goToCustomer(q: Quote): void {
+    if (!q.customerId) return;
+    this.router.navigate(['/customers', q.customerId]);
+  }
+
+  // ========= Derived =========
 
   get filteredQuotes(): Quote[] {
     const q = this.query.trim().toLowerCase();
@@ -67,21 +78,29 @@ export class QuotesComponent {
   // ========= Actions =========
 
   setStatus(q: Quote, status: 'DRAFT' | 'SENT' | 'APPROVED'): void {
+    // 🔒 Blockera alla ändringar på låsta offerter
+    if (this.isLocked(q)) return;
+
+    // Blockera “godkänn” om redan approved (extra skydd)
+    if (status === 'APPROVED' && q.status === 'APPROVED') return;
+
     // 1) uppdatera quote
     this.quoteStore.updateStatus(q.id, status);
 
     // 2) bara vid APPROVED ska vi skapa nästa steg
     if (status !== 'APPROVED') return;
 
-    const customerId = q.customerId; // ska nu alltid finnas
+    const customerId = q.customerId;
+    if (!customerId) return;
 
     // 3) skapa avtal om kunden inte redan har ett kopplat
     const customer = this.customers.getById(customerId);
 
-    if (customer?.currentAgreementId) {
-      // Koppla ändå “currentQuoteId” så kund pekar på senaste offerten
-      this.customers.updateCustomer(customerId, { currentQuoteId: q.id });
+    // Koppla alltid currentQuoteId till senaste offerten
+    this.customers.updateCustomer(customerId, { currentQuoteId: q.id });
 
+    // Om kunden redan har currentAgreementId – skapa inte ett nytt
+    if (customer?.currentAgreementId) {
       // Se till att setup finns
       if (!this.setups.getByCustomer(customerId)) {
         this.setups.upsert({
@@ -96,14 +115,13 @@ export class QuotesComponent {
 
     const agreement = this.agreements.createAgreement({
       customerId,
-      products: q.products,
+      products: (q as any).products ?? [],
       status: 'PENDING_SETUP',
       pdfUrl: '/mock/agreement.pdf',
     });
 
-    // 4) koppla kunden till aktuell quote + agreement
+    // 4) koppla kunden till aktuell agreement
     this.customers.updateCustomer(customerId, {
-      currentQuoteId: q.id,
       currentAgreementId: agreement.id,
     });
 

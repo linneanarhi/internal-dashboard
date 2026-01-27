@@ -81,9 +81,7 @@ export class CustomerStoreService {
   }
 
   updateStage(customerId: string, stage: CustomerStage): void {
-    const next = this._customers.value.map((c) =>
-      c.id === customerId ? { ...c, stage } : c,
-    );
+    const next = this._customers.value.map((c) => (c.id === customerId ? { ...c, stage } : c));
     this._customers.next(next);
     this.persist(next);
   }
@@ -98,6 +96,16 @@ export class CustomerStoreService {
     this._customers.next(next);
     this.persist(next);
   }
+
+setCurrentAgreement(customerId: string, agreementId: string): void {
+  const next = this._customers.value.map((c) =>
+    c.id === customerId ? { ...c, currentAgreementId: agreementId } : c,
+  );
+  this._customers.next(next);
+  this.persist(next); 
+}
+
+
 
   // --------------------
   // Storage

@@ -56,13 +56,9 @@ export class ActivateAgreement implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Uppdatera när stores ändras (setup blir COMPLETE -> canActivate blir true)
     this.sub.add(
       combineLatest([
         this.quotes.quotes$,
-        this.customers.customers$,
-        // om dina services har agreements$/setups$ funkar detta direkt.
-        // om de saknas: lägg till dem i services (vi kan fixa om du klistrar in dem).
         (this.agreements as any).agreements$ ?? this.quotes.quotes$,
         (this.setups as any).setups$ ?? this.quotes.quotes$,
       ] as any).subscribe(() => this.hydrate()),
@@ -100,13 +96,10 @@ export class ActivateAgreement implements OnInit, OnDestroy {
     this.agreementId = (customer as any)?.currentAgreementId ?? '';
 
     const setup = this.setups.getByCustomer(this.customerId);
-    this.setupStatus = setup?.status ?? 'INCOMPLETE';
+    this.setupStatus = setup?.status ?? 'UNKNOWN';
 
-    // ✅ viktig: kräver även agreementId
-    this.canActivate =
-      this.quote.status === 'APPROVED' && this.setupStatus === 'COMPLETE' && !!this.agreementId;
+    this.canActivate = this.quote.status === 'APPROVED' && this.setupStatus === 'COMPLETE';
 
-    // Förifyll (utan att skriva över om användaren redan ändrat)
     const currentName = this.form.get('agreementName')?.value;
     if (!currentName) {
       this.form.patchValue({
@@ -146,9 +139,19 @@ export class ActivateAgreement implements OnInit, OnDestroy {
       return;
     }
 
+    // Om avtal inte finns än: skapa det nu
     if (!this.agreementId) {
-      this.error = 'Saknar currentAgreementId på kunden. (Avtal skapades inte vid godkännande.)';
-      return;
+      const created = this.agreements.createAgreement({
+        customerId: this.customerId,
+        status: 'PENDING_SETUP',
+        products: (this.quote as any)?.products ?? [],
+        pdfUrl: (this.quote as any)?.pdfUrl,
+      });
+
+      this.agreementId = created.id;
+      this.customers.setCurrentAgreement(this.customerId, created.id);
+
+      this.customers.updateStage(this.customerId, 'AGREEMENT_DRAFT');
     }
 
     // 1) sätt avtal ACTIVE

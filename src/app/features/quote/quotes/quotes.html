@@ -10,13 +10,14 @@
       >
         <i class="bi bi-arrow-left"></i>
       </button>
+
       <button type="button" class="cursor-pointer" aria-label="Startsidan" (click)="goHome()">
         <i class="bi bi-house-door"></i>
       </button>
 
       <h1 class="text-xl font-semibold tracking-tight text-ink">Offerter</h1>
       <p class="mt-1 text-sm text-ink3">
-        Sök, filtrera och öppna offerter. Godkänd offert är låst.
+        Sök, filtrera och öppna offerter. Godkänd/konverterad offert är låst.
       </p>
     </div>
 
@@ -72,9 +73,7 @@
             <th class="th cursor-pointer" (click)="toggleSort('customerName')">Kund</th>
             <th class="th">Org.nr / Kund-ID</th>
             <th class="th cursor-pointer" (click)="toggleSort('status')">Status</th>
-            <th class="th text-right cursor-pointer" (click)="toggleSort('valueLeft')">
-              Värde kvar
-            </th>
+            <th class="th text-right cursor-pointer" (click)="toggleSort('valueLeft')">Värde kvar</th>
             <th class="th text-right">Mån kvar</th>
             <th class="th cursor-pointer" (click)="toggleSort('updatedAt')">Senast uppdaterad</th>
             <th class="th text-right">Åtgärd</th>
@@ -99,10 +98,14 @@
               >
                 {{ labelStatus(q.status) }}
               </span>
+
+              <div *ngIf="isLocked(q)" class="mt-1 text-xs text-ink3">
+                Låst
+              </div>
             </td>
 
             <td class="td text-right">
-              <span class="font-semibold text-ink">{{ q.valueLeft || 0 | number }} kr</span>
+              <span class="font-semibold text-ink">{{ (q.valueLeft || 0) | number }} kr</span>
             </td>
 
             <td class="td text-right">
@@ -115,36 +118,39 @@
 
             <td class="td">
               <div class="flex justify-end gap-2">
-                <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna</a>
+                <!-- Alltid -->
+                <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna offert</a>
 
-                <a
-                  *ngIf="q.status === 'APPROVED'"
-                  class="btn-accent"
-                  [routerLink]="['/agreements/activate']"
-                  [queryParams]="{ quoteId: q.id }"
-                >
-                  Aktivera avtal
-                </a>
-
+                <!-- Alltid (om customerId finns) -->
                 <button
                   type="button"
                   class="btn-secondary"
-                  (click)="setStatus(q, 'SENT')"
-                  [disabled]="
-                    q.status === 'SENT' || q.status === 'APPROVED' || q.status === 'CONVERTED'
-                  "
+                  (click)="goToCustomer(q)"
+                  [disabled]="!q.customerId"
                 >
-                  Markera skickad
+                  Gå till kund
                 </button>
 
-                <button
-                  type="button"
-                  class="btn-accent"
-                  (click)="setStatus(q, 'APPROVED')"
-                  [disabled]="q.status === 'APPROVED' || q.status === 'CONVERTED'"
-                >
-                  Godkänn
-                </button>
+                <!-- Endast om inte låst -->
+                <ng-container *ngIf="!isLocked(q)">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="setStatus(q, 'SENT')"
+                    [disabled]="q.status === 'SENT'"
+                  >
+                    Markera skickad
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-accent"
+                    (click)="setStatus(q, 'APPROVED')"
+                    [disabled]="q.status === 'APPROVED'"
+                  >
+                    Godkänn
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
@@ -167,18 +173,24 @@
           <div class="text-xs text-ink3">Org.nr: {{ q.companyId ?? '—' }}</div>
         </div>
 
-        <span
-          class="inline-flex items-center rounded-full px-2 py-1 text-xs"
-          [ngClass]="badgeClass(q.status)"
-        >
-          {{ labelStatus(q.status) }}
-        </span>
+        <div class="text-right">
+          <span
+            class="inline-flex items-center rounded-full px-2 py-1 text-xs"
+            [ngClass]="badgeClass(q.status)"
+          >
+            {{ labelStatus(q.status) }}
+          </span>
+
+          <div *ngIf="isLocked(q)" class="mt-1 text-xs text-ink3">
+            Låst
+          </div>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div class="rounded-xl border border-line2 p-3">
           <div class="text-xs text-ink3">Värde kvar</div>
-          <div class="font-semibold text-ink">{{ q.valueLeft || 0 | number }} kr</div>
+          <div class="font-semibold text-ink">{{ (q.valueLeft || 0) | number }} kr</div>
         </div>
         <div class="rounded-xl border border-line2 p-3">
           <div class="text-xs text-ink3">Månader kvar</div>
@@ -191,25 +203,34 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna</a>
+        <!-- Alltid -->
+        <a class="btn-secondary" [routerLink]="['/quote', q.id]">Öppna offert</a>
 
-        <button
-          type="button"
-          class="btn-secondary"
-          (click)="setStatus(q, 'SENT')"
-          [disabled]="q.status === 'SENT' || q.status === 'APPROVED' || q.status === 'CONVERTED'"
-        >
-          Markera skickad
+        <!-- Alltid (om customerId finns) -->
+        <button type="button" class="btn-secondary" (click)="goToCustomer(q)" [disabled]="!q.customerId">
+          Gå till kund
         </button>
 
-        <button
-          type="button"
-          class="btn-accent"
-          (click)="setStatus(q, 'APPROVED')"
-          [disabled]="q.status === 'APPROVED' || q.status === 'CONVERTED'"
-        >
-          Godkänn
-        </button>
+        <!-- Endast om inte låst -->
+        <ng-container *ngIf="!isLocked(q)">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="setStatus(q, 'SENT')"
+            [disabled]="q.status === 'SENT'"
+          >
+            Markera skickad
+          </button>
+
+          <button
+            type="button"
+            class="btn-accent"
+            (click)="setStatus(q, 'APPROVED')"
+            [disabled]="q.status === 'APPROVED'"
+          >
+            Godkänn
+          </button>
+        </ng-container>
       </div>
     </div>
 

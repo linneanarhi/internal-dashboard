@@ -91,7 +91,6 @@ export class TechnicalSetupComponent implements OnInit {
     this.status = 'COMPLETE';
     this.save();
 
-    // Visa fråga
     this.showAfterCompleteModal = true;
   }
 
@@ -112,7 +111,7 @@ export class TechnicalSetupComponent implements OnInit {
   goToActivateAgreement(): void {
     this.showAfterCompleteModal = false;
 
-    // Om vi kom hit från ActivateAgreement skickar vi tillbaka samma quoteId
+
     if (this.returnQuoteId) {
       this.router.navigate(['/agreements/activate'], {
         queryParams: { quoteId: this.returnQuoteId },
@@ -120,8 +119,6 @@ export class TechnicalSetupComponent implements OnInit {
       return;
     }
 
-    // Annars kan man inte aktivera utan quoteId (activate-sidan kräver quoteId)
-    // Så vi går tillbaka till kunden i så fall.
     this.router.navigate(['/customers', this.customerId]);
   }
 }
