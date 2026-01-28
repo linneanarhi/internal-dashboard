@@ -215,7 +215,7 @@
 }
 
 /* Label-text (visas bara när expanded) */
-.label {
+.label2 {
   margin-left: 16px;
   font-size: 1rem;
   opacity: 0;
@@ -224,7 +224,7 @@
   color: var(--text-primary);
 }
 
-.portal-sidebar.expanded .label {
+.portal-sidebar.expanded .label2 {
   opacity: 1;
 }
 
@@ -264,7 +264,7 @@
   color: #ff6b6b;
 }
 
-.logout-item .label {
+.logout-item .label2 {
   margin-left: 16px;
   font-size: 1rem;
   opacity: 0;
@@ -273,7 +273,7 @@
   color: #ff6b6b;
 }
 
-.portal-sidebar.expanded .logout-item .label {
+.portal-sidebar.expanded .logout-item .label2 {
   opacity: 1;
 }
 
@@ -283,7 +283,7 @@
 }
 
 .logout-item:hover i,
-.logout-item:hover .label {
+.logout-item:hover .label2 {
   color: #ff4444;
 }
 

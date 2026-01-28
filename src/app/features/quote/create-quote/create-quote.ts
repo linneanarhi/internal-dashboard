@@ -54,14 +54,11 @@ export class QuoteNewComponent implements OnInit {
   quoteId = '';
   form!: FormGroup;
 
-  // ✅ för “på riktigt”: öppna /quote/new?customerId=...
   prefillCustomerId = '';
 
   ngOnInit(): void {
-    // 1) quoteId från route eller nytt
     this.quoteId = this.route.snapshot.paramMap.get('id') ?? this.makeId();
 
-    // 2) build form
     this.form = this.fb.group({
       customer: this.fb.group({
         customerName: ['', [Validators.required, Validators.minLength(2)]],
@@ -99,7 +96,6 @@ export class QuoteNewComponent implements OnInit {
       products: this.fb.control<Product[]>([]),
     });
 
-    // 3) edit-läge: ladda offert och patcha
     const existing = this.quotes.getById(this.quoteId);
     if (existing) {
       this.patchFromQuote(existing);
@@ -107,10 +103,9 @@ export class QuoteNewComponent implements OnInit {
       if (existing.status === 'APPROVED') {
         this.form.disable();
       }
-      return; // edit-läge vinner över prefill
+      return; 
     }
 
-    // 4) ✅ create-läge: prefill via query param customerId
     this.prefillCustomerId = this.route.snapshot.queryParamMap.get('customerId') ?? '';
     if (this.prefillCustomerId) {
       const c = this.customers.getById(this.prefillCustomerId);
@@ -211,13 +206,6 @@ export class QuoteNewComponent implements OnInit {
     window.print();
   }
 
-  /**
-   * ✅ “På riktigt”:
-   * - Om vi öppnade med customerId: använd den kunden (uppdatera ev fält)
-   * - Annars: addOrGetCustomerFromQuote (skapa om saknas)
-   * - Sätt currentQuoteId på kunden
-   * - Vid APPROVED: skapa avtal + setup-stub och sätt currentAgreementId
-   */
   private persistQuoteAndCustomer(quote: Quote): void {
     const createdAt = this.parseYmd(quote.customerStartDate) ?? new Date();
 
@@ -228,14 +216,12 @@ export class QuoteNewComponent implements OnInit {
       return;
     }
 
-    // 1) Hämta/Skapa kund
     const prefill = this.prefillCustomerId
       ? this.customers.getById(this.prefillCustomerId)
       : undefined;
 
     const customer = prefill
       ? (() => {
-          // uppdatera kund med det som står i offerten (om man ändrat namn/email/products)
           this.customers.updateCustomer(prefill.id, {
             name: quote.customerName,
             email: quote.contactEmail || prefill.email,
@@ -251,30 +237,24 @@ export class QuoteNewComponent implements OnInit {
           createdAt,
         });
 
-    // 2) Sätt customerId och spara quote
     quote.customerId = customer.id;
     this.quotes.upsert(quote);
 
-    // 3) Koppla kunden -> currentQuoteId (viktigt för flow-resolver)
     this.customers.updateCustomer(customer.id, {
       currentQuoteId: quote.id,
     });
 
-    // 4) Spara metrics på kundprofil
     this.customers.updateCustomerQuoteMetrics(customer.id, quote.monthsLeft, quote.valueLeft);
 
-    // 5) (tillfällig stage tills du är 100% flow)
     if (quote.status === 'DRAFT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
     if (quote.status === 'SENT') this.customers.updateStage(customer.id, 'QUOTE_SENT');
     if (quote.status === 'APPROVED') this.customers.updateStage(customer.id, 'QUOTE_APPROVED');
     if (quote.status === 'CONVERTED') this.customers.updateStage(customer.id, 'ACTIVE');
 
-    // 6) ✅ Vid APPROVED: skapa agreement + setup-stub (om saknas)
     if (quote.status === 'APPROVED') {
       const latestCustomer = this.customers.getById(customer.id);
       const currentAgreementId = (latestCustomer as any)?.currentAgreementId as string | undefined;
 
-      // A) skapa avtal om det inte redan finns
       if (!currentAgreementId && typeof (this.agreements as any).createAgreement === 'function') {
         const agreement = (this.agreements as any).createAgreement({
           customerId: customer.id,
@@ -289,7 +269,6 @@ export class QuoteNewComponent implements OnInit {
         });
       }
 
-      // B) setup-stub om saknas
       const existingSetup = this.setups.getByCustomer(customer.id);
       if (!existingSetup) {
         this.setups.upsert({
@@ -302,10 +281,6 @@ export class QuoteNewComponent implements OnInit {
     }
   }
 
-  /**
-   * Build quote utifrån form.
-   * customerId fylls “på riktigt” i persistQuoteAndCustomer().
-   */
   private buildQuote(status: Quote['status']): Quote {
     const existing = this.quotes.getById(this.quoteId);
 

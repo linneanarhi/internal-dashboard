@@ -34,7 +34,7 @@
     @for (item of menuItems; track item) {
       <li class="menu-item" [routerLink]="item.route" routerLinkActive="active">
         <i class="bi {{ item.icon }}"></i>
-        <span class="label">{{ item.label }}</span>
+        <span class="label2">{{ item.label }}</span>
       </li>
     }
   </ul>
@@ -44,34 +44,29 @@
   <!-- Action buttons at the bottom -->
   <ul class="menu-bottom">
     <li class="menu-item" routerLink="/" routerLinkActive="active">
-      <i class="bi bi-gear-fill"></i>
-      <span class="label">Inställningar</span>
-    </li>
-
-    <li class="menu-item" routerLink="/about-us" routerLinkActive="active">
       <i class="bi bi-people-fill"></i>
-      <span class="label">Om oss</span>
+      <span class="label2">Alla kunder</span>
     </li>
     <li class="menu-item" (click)="exportChat()">
       <i class="bi bi-download"></i>
-      <span class="label">Exportera chatt</span>
+      <span class="label2">Exportera chatt</span>
     </li>
     <li class="menu-item" (click)="openHelp()">
       <i class="bi bi-question-circle-fill"></i>
-      <span class="label">Hjälp</span>
+      <span class="label2">Hjälp</span>
     </li>
 
     <li class="menu-item">
       <i class="bi bi-translate"></i>
-      <span class="label">Språk</span>
+      <span class="label2">Språk</span>
     </li>
     <li class="menu-item" (click)="toggleTheme()">
       <i class="bi" [class.bi-moon-stars-fill]="isDarkTheme" [class.bi-sun-fill]="!isDarkTheme"></i>
-      <span class="label">Byt tema</span>
+      <span class="label2">Byt tema</span>
     </li>
     <li class="logout-item" (click)="logout()">
       <i class="bi bi-box-arrow-right"></i>
-      <span class="label">Logga ut</span>
+      <span class="label2">Logga ut</span>
     </li>
   </ul>
 </nav>

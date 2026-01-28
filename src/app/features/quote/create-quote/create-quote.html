@@ -25,22 +25,6 @@
     <div class="flex flex-wrap gap-2">
       <button type="button" class="btn-secondary" (click)="exportPdf()">Exportera PDF</button>
 
-      <button
-        type="button"
-        class="btn-secondary"
-        (click)="markAsSent()"
-        [disabled]="!isValidToSave"
-      >
-        Markera som skickad
-      </button>
-
-      <button type="button" class="btn-accent" (click)="saveDraft()" [disabled]="!isValidToSave">
-        Spara utkast
-      </button>
-
-      <button type="button" class="btn-accent" (click)="approveQuote()" [disabled]="!isValidToSave">
-        Godkänn offert
-      </button>
     </div>
   </div>
 
@@ -268,5 +252,12 @@
 
   <div class="flex gap-2">
     <button class="btn-secondary" type="button" (click)="goBack()">Avbryt</button>
+    <button type="button" class="btn-secondary" (click)="saveDraft()" [disabled]="!isValidToSave">
+      Spara utkast
+    </button>
+
+    <button type="button" class="btn-accent" (click)="approveQuote()" [disabled]="!isValidToSave">
+      Godkänn offert
+    </button>
   </div>
 </div>
